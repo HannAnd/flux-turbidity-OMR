@@ -1,0 +1,64 @@
+---
+title: "TRex Datafile Calibration"
+author: "Hannah Anderson"
+date: "2023-11-17"
+output: pdf_document
+---
+
+##Introduction
+
+We used the automated tracking program TRex to track fish location during
+behavioral recordings. When exporting datafiles, TRex automatically converts the
+pixel values from the video to centimeters for analysis purposes. However,
+for our analyses we require the original pixel values of the video in order to
+cross reference with the position of the four corners of the experimental
+chambers, the coordinates of which were located in the original pixel values.
+
+Here, we first convert the X,Y coordinated from the initial exported TRex
+datafiles to the original pixel coordinates. Then, we calibrate the coordinates
+of both the new version of the datafiles and the collected corner coordinates
+into centimeters based on the known length of the lower wall (as seen from the
+video). These calibrated version of the datafiles will be used by both
+data_conversion_movement.Rmd and data_conversion_social.Rmd.
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#setting the working directory
+knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/CSV_datafiles")
+library(tidyverse)
+```
+
+```{r file read, message = FALSE}
+#reading the file names into a list
+list_csv <- list.files(pattern = "*.csv")
+#from the above list, creating a list of dataframes while excluding unused
+#columns
+masterlist <- lapply(list_csv, read_csv, col_select = c(3:4, 6:8))
+#replacing inf with NA, which R handles better
+inf2NA <- function(v) replace(v, is.infinite(v), NA)
+fishlist <- lapply(masterlist, function(d) replace(d, TRUE, sapply(d, inf2NA)))
+#importing the list of corner coordinates for each video
+corners <- read_csv("D://Turbidity Flux Experiment with OMR/film_frame_coordinates.csv")
+```
+
+## Converting Back to Pixel Coordinates
+
+```{r pixels}
+for (k in 1:(length(list_csv))) {
+  #finding the number of rows of the current file
+  len <- length(fishlis[[k]])
+  
+  
+}
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
