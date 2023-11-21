@@ -93,4 +93,17 @@ for (d in 1:(length(list_csv))) {
   #and then I need to export the datafiles
   write_csv(calib_list[[d]], paste0(filepath, "calibrated_", list_csv[[d]]))
 }
+
+#creating a copy of 'corners' that can hold the calibrated values
+calib_corners <- corners
+
+#calibrating the corner coordinates for future analyses
+for (c in 1:(length(corners$tankID))) {
+  knowndist <- sqrt((corners$bottomLeftX[c] - corners$bottomRightX[c])^2 +
+                     (corners$bottomLeftY[c] - corners$bottomRightY[c])^2)
+  
+  calib_corners[c,3:10] <- calib_corners[c,3:10]*calibration
+}
+
+write_csv(calib_corners, "D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 ```
