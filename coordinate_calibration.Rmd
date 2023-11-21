@@ -52,11 +52,11 @@ frames and check how these correspond to those calibrated here.
 #creating a copy of fishlist that can hold the converted values
 fishpx <- fishlist
 
-#re-ordering "corners" to correspond to the ordering of the main dataset
-tankorder <- c("10A", "10B", "10C", "1A", "1B", "1C", "2A", "2B", "3A",
-               "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "6A", "6B", "6C",
-               "7A", "7B", "7C", "8A", "8B", "8C", "9A", "9B", "9C")
-corners <- corners %>% arrange(factor(tankID, levels = tankorder), recording)
+###ok, so I want to detect which file is being used and reference the appropriate
+###row of 'corners'
+##I can pull out the tank and recording number from the file names pretty easily,
+##I'm just not sure at the moment how to make that call back to the appropriate
+##row from 'corners'
 
 for (k in 1:(length(list_csv))) {
   #TRex equated 1920 pixels to equal 30 cm
@@ -72,9 +72,27 @@ calib_list <- fishpx
 #then calibrate by my standards
   #first, calculate the number of pixels for the known distance
 for (d in 1:(length(list_csv))) {
+  
+  #extracting the tankID and recording number from the file name of the current
+  #datafile
+  file_str <- strsplit(list_csv[d], split = "_")
+  #using the file information to refer to the appropriate X,Y coordinate
+  #values in the 'corners' dataframe
+  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  
   #calculating the distance (in pixels) of the "bottom" wall of the film area
-  knowndist <- sqrt((corners$bottomLeftX[d] - corners$bottomRightX[d])^2 + 
-                    (corners$bottomLeftY[d] - corners$bottomRightY[d])^2)
+  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
   #the above distance is known to be 20 cm long
   calibration <- 20/knowndist
   
