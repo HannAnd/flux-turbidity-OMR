@@ -40,24 +40,18 @@ inf2NA <- function(v) replace(v, is.infinite(v), NA)
 fishlist <- lapply(masterlist, function(d) replace(d, TRUE, sapply(d, inf2NA)))
 #manually collected coordinates for each of the corners of the film area in pixels
 corners <- read_csv("D://Turbidity Flux Experiment with OMR/film_frame_coordinates.csv")
+#filepath for exported files
+filepath <- "D://Turbidity Flux Experiment with OMR/calibrated_CSVs/"
 ```
 
-## Converting Back to Pixel Coordinates
 
-To test this calibration, determine which fishlist dataframe corresponds to
-which raw .csv file using list_csv. Then, in Excel, manually calibrate a few
-frames and check how these correspond to those calibrated here.
+## Converting Back to Pixel Coordinates
 
 ```{r pixels}
 #creating a copy of fishlist that can hold the converted values
 fishpx <- fishlist
 
-###ok, so I want to detect which file is being used and reference the appropriate
-###row of 'corners'
-##I can pull out the tank and recording number from the file names pretty easily,
-##I'm just not sure at the moment how to make that call back to the appropriate
-##row from 'corners'
-
+#converting TRex's automated calibration back into pixel values
 for (k in 1:(length(list_csv))) {
   #TRex equated 1920 pixels to equal 30 cm
   fishpx[[k]]$X <- fishlist[[k]]$X*(1920/30)
@@ -67,17 +61,14 @@ for (k in 1:(length(list_csv))) {
 #creating a copy of fishpx that can hold the calibrated values
 calib_list <- fishpx
 
-##remember corners is every tank and fishlist is every fish
-
-#then calibrate by my standards
-  #first, calculate the number of pixels for the known distance
+#converting from pixel values into proper centimeter values
 for (d in 1:(length(list_csv))) {
   
   #extracting the tankID and recording number from the file name of the current
   #datafile
   file_str <- strsplit(list_csv[d], split = "_")
-  #using the file information to refer to the appropriate X,Y coordinate
-  #values in the 'corners' dataframe
+  #using the above to point to the appropriate X,Y coordinate values in the
+  #'corners' dataframe
   X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
                                 corners$recording == parse_number(
                                                      file_str[[1]][2])]
@@ -99,15 +90,7 @@ for (d in 1:(length(list_csv))) {
   #converting the pixel coordinates into centimeters using the calibration value
   calib_list[[d]]$X <- fishpx[[d]]$X*calibration
   calib_list[[d]]$Y <- fishpx[[d]]$Y*calibration
+  #and then I need to export the datafiles
+  write_csv(calib_list[[d]], paste0(filepath, "calibrated_", list_csv[[d]]))
 }
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
