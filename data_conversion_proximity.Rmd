@@ -1,0 +1,177 @@
+---
+title: "Flux Turbidity Data Conversion for Proximity Tests"
+author: "Hannah Anderson"
+date: "2023-11-29"
+output: pdf_document
+---
+
+## Introduction
+
+Data for this experiment was captured using vertically mounted cameras observing
+the movement of zebrafish in shallow waters. The videos were then processed
+using the automated tracking program TRex, which returns individual files for
+each tracked fish for each video. Here, we are taking these individual fish
+files and 1) converting the frame-by-frame data into summary statistics for each
+video and 2) combining the data from the 900+ files into a singular dataset.
+This dataset is then exported to be used in statistical analyses.
+
+In this script specifically we are calculating values relating to proximity of
+fish to other fish and the external walls of the experimental chamber as well as
+polarity values for the fish shoals. See data_conversion_movement.Rmd for the
+calculations of general movement patterns. If using one of these scripts after
+the other make sure to clear the working environment as many variable names are
+shared between scripts.
+
+
+### Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#setting the working directory
+knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/calibrated_CSVs")
+#loading packages
+library(tidyverse)
+library(data.table)
+library(zoo)
+library(sf)
+library(circular)
+#the number of fish in a group
+fish = 4
+```
+
+
+### Importing Files
+
+```{r file read in, message = FALSE}
+#reading the file names into a list
+list_csv <- list.files(pattern = "*.csv")
+#from the file list, creating a list of dataframes
+masterlist <- lapply(list_csv, read_csv)
+#importing a list of coordinates for the corners of the film area for all videos
+corners <- read_csv("D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+###In the other file here is where I create a blank dataframe to contain the final data
+```
+
+
+### Processing Files
+
+```{r loops, include = FALSE, message = FALSE}
+#enumerating the file number
+i = 1
+
+#probably should put a comment here
+for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
+  
+  #combining the files from all fish per video to be analyzed collectively
+  shoal <- masterlist[i:(i+fish-1)]
+  
+  
+  ##standardizing the length of each fish's file in a video so all files start
+  ##at frame 0 and end at the last frame of the longest file
+  
+  #determining the last frame of a video by taking the largest frame value
+  #from all of the fish datafiles
+  maxframe <- max(unlist(lapply(shoal, function(m) m[,"frame"])))
+  #creating a dataframe filled with NAs to pad the missing frames from each file
+  dfNA <- data.frame(frame = 0:maxframe, fish_detected = NA, angle = NA,
+                     X = NA, Y = NA)
+  
+  
+  
+  for (z in 1:fish) {  #across one video of files
+    
+    #finding the starting frame of the current datafile
+    minfish <- min(shoal[[z]][,"frame"])
+    
+    #adding NA rows from dfNA to the start of a file when it starts on a frame
+    #later than 0
+    if (minfish > 0) {  #across one fish file within a video
+      shoal[[z]] <- rbind(dfNA[1:(minfish),], shoal[[z]])
+    }
+    
+    #finding the frame the current datafile ends on
+    maxfish <- max(shoal[[z]][,"frame"])
+    
+    #adding NA rows from dfNA to the end of a file when it ends earlier than the
+    #longest file from the current video
+    if(maxfish < maxframe) {  #across one fish file within a video
+      shoal[[z]] <- rbind(shoal[[z]], dfNA[(maxfish+2):(maxframe+1),])
+    }
+  } #z loop end
+  
+  
+  
+  #creating an empty dataframe to hold the neighbor distance values
+  distances <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 6))
+  colnames(distances) <- c(1:6)
+  #creating an empty dataframe to hold the polarity and shoal area values
+  shoal_angle <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 2))
+  colnames(shoal_angle) <- c("shoal_area", "polarity")
+  
+  #calculating nearest and farthest neighbor, polarity and shoal area
+  for (a in 1:(maxframe+1)) {  #across one video of files
+    
+    #pulling the X,Y coordinates from each of the fish files in a video
+    coor <- data.frame(matrix(nrow = fish, ncol = 2))
+    colnames(coor) <- c("X", "Y")
+    for (p in 1:fish) {
+      coor$X[p] <- shoal[[p]][a,"X"]
+      coor$Y[p] <- shoal[[p]][a,"Y"]
+    }
+    
+    #calculating the distances between every fish
+    neighbors <- as.vector(dist(coor))
+    
+    #adding the distance values into the distance dataframe
+    for (d in 1:(length(neighbors))) {
+      distance <- neighbors[d]
+    }
+    
+    #calculating shoal areas, but only if all fish in the group are detected
+    #for that frame
+    if (anyNA(as.vector(unlist(coor))) == FALSE) {
+      #sf needs the first and last coordinates of a polygon to be the same to
+      #finish drawing it
+      coorpoly <- rbind(coor, coor[1,])
+      #changing the classes of the columns back to numeric from list
+      coorpoly$X <- unlist(coorpoly$X)
+      coorpoly$Y <- unlist(coorpoly$Y)
+      #converting the coordinates to a polygon and adding to the polarity and
+      #shoal area dataframe
+      shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                           x = list(cbind(
+                                                    coorpoly$X,coorpoly$Y))))
+    }
+    
+    
+    #calculating polarity, which is the variance of fish angles- since this
+    #data is inherently circular we're using circular variance
+    
+    #converting the data into a "circular" object for the package 'circular'
+    circ <- suppressWarnings(as.circular(unlist(lapply(shoal, function(v)
+                                         v[a,"angle"])), type = "angles",
+                                         units = "radians", rotation = "clock",
+                                         zero = 0))
+    shoal.angle$polarity[a] <- var.circular(circ)
+  } #a loop end
+  
+  
+  ###to calculate distance to nearest wall:
+  ###-call on the correct 'corners' row corresponding to the current video
+  ###-for loop for the current video
+  ###-for loop for the current fish
+  ###-for each frame of the fish's file, calculate the distance between the
+  ### fish and all four walls
+  ###-take the smallest of these four distances and toss it into a dataframe
+  ###-once this has been done for all three fish, for each frame average the
+  ### values together (excluding frames where not all fish are detected)
+  ###-and then the noise correction will go in the designated noise correction
+  ### spot
+  
+  
+  ###down here will go the noise corrections
+}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
