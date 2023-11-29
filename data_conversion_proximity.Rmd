@@ -154,6 +154,31 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                          units = "radians", rotation = "clock",
                                          zero = 0))
     shoal.angle$polarity[a] <- var.circular(circ)
+    
+    
+    #calculating the distance between the fish and the nearest wall
+    
+    #extracting the tankID and recording number from the file name of the
+    #current datafile
+    file_str <- strsplit(list_csv[i], split = "_")
+    #creating a dataframe to hold the coordinates for the four corners of the
+    #filming area
+    walls <- data.frame(matrix(nrow = 4, ncol = 2))
+    colnames(walls) <- c("X", "Y")
+    #enumerating the columns from 'corners' being placed into 'walls'
+    XY = 3:4
+    #adding the film area coordinates to the dataframe with the order of
+    #bottom left corner, bottome right corner, top right corner, top left corner
+    for (w in 1:4) {
+      #####still need to check if this works!
+      walls[w,] <- corners[corners$tankID == file_str[[1]][2] &
+                            corners$recording == parse_number(
+                                                 file_str[[1]][3]
+                            ),XY]
+      XY <- XY+2
+    }
+    
+    
   } #a loop end
   
   
