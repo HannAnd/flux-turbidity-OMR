@@ -67,6 +67,9 @@ for (d in 1:(length(list_csv))) {
   #extracting the tankID and recording number from the file name of the current
   #datafile
   file_str <- strsplit(list_csv[d], split = "_")
+  #making the tankID column of 'corners' match the corresponding tank names
+  #from the filename strings
+  corners$tankID <- paste0("tank", corners$tankID)
   #using the above to point to the appropriate X,Y coordinate values in the
   #'corners' dataframe
   X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
