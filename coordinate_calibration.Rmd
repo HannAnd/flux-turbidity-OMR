@@ -61,15 +61,119 @@ for (k in 1:(length(list_csv))) {
 #creating a copy of fishpx that can hold the calibrated values
 calib_list <- fishpx
 
+#making the tankID column of 'corners' match the corresponding tank names from
+#the fish datafile filenames
+corners$tankID <- paste0("tank", corners$tankID)
+
+#the code hangs, let's see if we can fix it
+quarter <- length(list_csv)*0.25
+
+for (d in 1:quarter) {
+  #extracting the tankID and recording number from the file name of the current
+  #datafile
+  file_str <- strsplit(list_csv[d], split = "_")
+  #using the above to point to the appropriate X,Y coordinate values in the
+  #'corners' dataframe
+  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  
+  #calculating the distance (in pixels) of the "bottom" wall of the film area
+  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
+  #the above distance is known to be 20 cm long
+  calibration <- 20/knowndist
+  
+  #converting the pixel coordinates into centimeters using the calibration value
+  calib_list[[d]]$X <- fishpx[[d]]$X*calibration
+  calib_list[[d]]$Y <- fishpx[[d]]$Y*calibration
+  #and then I need to export the datafiles
+  write_csv(calib_list[[d]], paste0(filepath, "calibrated_", list_csv[[d]]))
+}
+
+for (e in 1:quarter) {
+  file_str <- strsplit(list_csv[(e+quarter)], split = "_")
+  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  
+  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
+  calibration <- 20/knowndist
+  
+  calib_list[[(e+quarter)]]$X <- fishpx[[(e+quarter)]]$X*calibration
+  calib_list[[(e+quarter)]]$Y <- fishpx[[(e+quarter)]]$Y*calibration
+  write_csv(calib_list[[(e+quarter)]], paste0(filepath, "calibrated_", list_csv[[(e+quarter)]]))
+}
+
+for (f in 1:quarter) {
+  file_str <- strsplit(list_csv[(e+(2*quarter))], split = "_")
+  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  
+  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
+  calibration <- 20/knowndist
+  
+  calib_list[[(e+(quarter*2))]]$X <- fishpx[[(e+(quarter*2))]]$X*calibration
+  calib_list[[(e+(quarter*2))]]$Y <- fishpx[[(e+(quarter*2))]]$Y*calibration
+  write_csv(calib_list[[(e+(quarter*2))]], paste0(filepath, "calibrated_", list_csv[[(e+(quarter*2))]]))
+}
+
+for (g in 1:quarter) {
+  file_str <- strsplit(list_csv[(e+(3*quarter))], split = "_")
+  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][2])]
+  
+  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
+  calibration <- 20/knowndist
+  
+  calib_list[[(e+(quarter*3))]]$X <- fishpx[[(e+(quarter*3))]]$X*calibration
+  calib_list[[(e+(quarter*3))]]$Y <- fishpx[[(e+(quarter*3))]]$Y*calibration
+  write_csv(calib_list[[(e+(quarter*3))]], paste0(filepath, "calibrated_", list_csv[[(e+(quarter*3))]]))
+}
+
 #converting from pixel values into proper centimeter values
 for (d in 1:(length(list_csv))) {
   
   #extracting the tankID and recording number from the file name of the current
   #datafile
   file_str <- strsplit(list_csv[d], split = "_")
-  #making the tankID column of 'corners' match the corresponding tank names
-  #from the filename strings
-  corners$tankID <- paste0("tank", corners$tankID)
   #using the above to point to the appropriate X,Y coordinate values in the
   #'corners' dataframe
   X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
