@@ -21,58 +21,55 @@ into centimeters based on the known length of the lower wall (as seen from the
 video). These calibrated version of the datafiles will be used by both
 data_conversion_movement.Rmd and data_conversion_social.Rmd.
 
-```{r setup, include = FALSE}
+
+##Prerequisites
+
+This script will not function properly if there is insufficient available
+memory on the computer. When insufficient memory is available to the script it
+will typically hang or stall part way through processing datafiles and R will
+need to be manually restarted. Occasionally R will instead crash. We advise
+anyone using this script to minimize other memory usage by other programs on
+their computer to avoid these problems.
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
-
-#setting the working directory
-knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/CSV_datafiles")
 library(tidyverse)
-```
 
-```{r file read, message = FALSE}
+#filepath for importing and exporting the datafiles
+importpath <- "D://Turbidity Flux Experiment with OMR/CSV_datafiles/"
+exportpath <- "D://Turbidity Flux Experiment with OMR/calibrated_CSVs/"
+
 #reading the file names into a list
-list_csv <- list.files(pattern = "*.csv")
-#from the above list, creating a list of dataframes while excluding unused
-#columns
-masterlist <- lapply(list_csv, read_csv, col_select = c(3:4, 6:8))
-#replacing inf with NA, which R handles better
-inf2NA <- function(v) replace(v, is.infinite(v), NA)
-fishlist <- lapply(masterlist, function(d) replace(d, TRUE, sapply(d, inf2NA)))
+list_csv <- list.files(strtrim(importpath, nchar(importpath)-1),
+                       pattern = "*.csv")
+
 #manually collected coordinates for each of the corners of the film area in pixels
 corners <- read_csv("D://Turbidity Flux Experiment with OMR/film_frame_coordinates.csv")
-#filepath for exported files
-filepath <- "D://Turbidity Flux Experiment with OMR/calibrated_CSVs/"
+#making the tankID column of 'corners' match the corresponding tank names from
+#the fish datafiles
+corners$tankID <- paste0("tank", corners$tankID)
 ```
 
 
-## Converting Back to Pixel Coordinates
+## Calibration
 
-```{r pixels}
-#creating a copy of fishlist that can hold the converted values
-fishpx <- fishlist
-
-#converting TRex's automated calibration back into pixel values
+```{r calibration}
 for (k in 1:(length(list_csv))) {
-  #TRex equated 1920 pixels to equal 30 cm
-  fishpx[[k]]$X <- fishlist[[k]]$X*(1920/30)
-  fishpx[[k]]$Y <- fishlist[[k]]$Y*(1920/30)
-}
-
-#creating a copy of fishpx that can hold the calibrated values
-calib_list <- fishpx
-
-#making the tankID column of 'corners' match the corresponding tank names from
-#the fish datafile filenames
-corners$tankID <- paste0("tank", corners$tankID)
-
-#the code hangs, let's see if we can fix it
-quarter <- length(list_csv)*0.25
-
-for (d in 1:quarter) {
+  #importing current datafile
+  fishfile <- read_csv(paste0(importpath, list_csv[k]), col_select = c(3:4, 6:8))
+  #replacing inf values in datafile with NAs, which R handles better
+  fishfile[sapply(fishfile, is.infinite)] <- NA
+  
+  #converting TRex's automated calibration values back into pixel values
+  uncalib_fish <- fishfile
+  #TRex equated 1920 pixels to 30 cm
+  uncalib_fish$X <- fishfile$X*(1920/30)
+  uncalib_fish$Y <- fishfile$Y*(1920/30)
+  
   #extracting the tankID and recording number from the file name of the current
   #datafile
-  file_str <- strsplit(list_csv[d], split = "_")
-  #using the above to point to the appropriate X,Y coordinate values in the
+  file_str <- strsplit(list_csv[k], split = "_")
+  #using the above to find the corresponding X,Y coordinate values from the
   #'corners' dataframe
   X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
                                 corners$recording == parse_number(
@@ -87,130 +84,30 @@ for (d in 1:quarter) {
                                 corners$recording == parse_number(
                                                      file_str[[1]][2])]
   
-  #calculating the distance (in pixels) of the "bottom" wall of the film area
+  #using the 'corners' coordinates to calculate the distance (in pixels) of the
+  #"bottom" wall of the film area
   knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
   #the above distance is known to be 20 cm long
   calibration <- 20/knowndist
   
   #converting the pixel coordinates into centimeters using the calibration value
-  calib_list[[d]]$X <- fishpx[[d]]$X*calibration
-  calib_list[[d]]$Y <- fishpx[[d]]$Y*calibration
-  #and then I need to export the datafiles
-  write_csv(calib_list[[d]], paste0(filepath, "calibrated_", list_csv[[d]]))
-}
+  calib_fish <- uncalib_fish
+  calib_fish$X <- uncalib_fish$X*calibration
+  calib_fish$Y <- uncalib_fish$Y*calibration
+  
+  #exporting the calibrated datafile
+  write_csv(calib_fish, paste0(exportpath, "calibrated_", list_csv[k]))
+}  #end of k loop
 
-for (e in 1:quarter) {
-  file_str <- strsplit(list_csv[(e+quarter)], split = "_")
-  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  
-  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
-  calibration <- 20/knowndist
-  
-  calib_list[[(e+quarter)]]$X <- fishpx[[(e+quarter)]]$X*calibration
-  calib_list[[(e+quarter)]]$Y <- fishpx[[(e+quarter)]]$Y*calibration
-  write_csv(calib_list[[(e+quarter)]], paste0(filepath, "calibrated_", list_csv[[(e+quarter)]]))
-}
 
-for (f in 1:quarter) {
-  file_str <- strsplit(list_csv[(e+(2*quarter))], split = "_")
-  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  
-  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
-  calibration <- 20/knowndist
-  
-  calib_list[[(e+(quarter*2))]]$X <- fishpx[[(e+(quarter*2))]]$X*calibration
-  calib_list[[(e+(quarter*2))]]$Y <- fishpx[[(e+(quarter*2))]]$Y*calibration
-  write_csv(calib_list[[(e+(quarter*2))]], paste0(filepath, "calibrated_", list_csv[[(e+(quarter*2))]]))
-}
-
-for (g in 1:quarter) {
-  file_str <- strsplit(list_csv[(e+(3*quarter))], split = "_")
-  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  
-  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
-  calibration <- 20/knowndist
-  
-  calib_list[[(e+(quarter*3))]]$X <- fishpx[[(e+(quarter*3))]]$X*calibration
-  calib_list[[(e+(quarter*3))]]$Y <- fishpx[[(e+(quarter*3))]]$Y*calibration
-  write_csv(calib_list[[(e+(quarter*3))]], paste0(filepath, "calibrated_", list_csv[[(e+(quarter*3))]]))
-}
-
-#converting from pixel values into proper centimeter values
-for (d in 1:(length(list_csv))) {
-  
-  #extracting the tankID and recording number from the file name of the current
-  #datafile
-  file_str <- strsplit(list_csv[d], split = "_")
-  #using the above to point to the appropriate X,Y coordinate values in the
-  #'corners' dataframe
-  X_left <- corners$bottomLeftX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  X_right <- corners$bottomRightX[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_left <- corners$bottomLeftY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  Y_right <- corners$bottomRightY[corners$tankID == file_str[[1]][1] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][2])]
-  
-  #calculating the distance (in pixels) of the "bottom" wall of the film area
-  knowndist <- sqrt((X_left - X_right)^2 + (Y_left - Y_right)^2)
-  #the above distance is known to be 20 cm long
-  calibration <- 20/knowndist
-  
-  #converting the pixel coordinates into centimeters using the calibration value
-  calib_list[[d]]$X <- fishpx[[d]]$X*calibration
-  calib_list[[d]]$Y <- fishpx[[d]]$Y*calibration
-  #and then I need to export the datafiles
-  write_csv(calib_list[[d]], paste0(filepath, "calibrated_", list_csv[[d]]))
-}
-
-#creating a copy of 'corners' that can hold the calibrated values
+#also calibrating the corner coordinate values
 calib_corners <- corners
-
-#calibrating the corner coordinates for future analyses
 for (c in 1:(length(corners$tankID))) {
   knowndist <- sqrt((corners$bottomLeftX[c] - corners$bottomRightX[c])^2 +
                      (corners$bottomLeftY[c] - corners$bottomRightY[c])^2)
   
   calib_corners[c,3:10] <- calib_corners[c,3:10]*calibration
 }
-
+#exporting the calibrated 'corners' datafile
 write_csv(calib_corners, "D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 ```
