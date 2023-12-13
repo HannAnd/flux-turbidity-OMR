@@ -29,7 +29,7 @@ shared between scripts.
 knitr::opts_chunk$set(echo = TRUE)
 
 #setting the working directory
-knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/calibrated_CSVs")
+knitr::opts_knit$set(root.dir = "E://Turbidity Flux Experiment with OMR/calibrated_CSVs")
 #loading packages
 library(tidyverse)
 library(data.table)
@@ -49,8 +49,13 @@ list_csv <- list.files(pattern = "*.csv")
 #from the file list, creating a list of dataframes
 masterlist <- lapply(list_csv, read_csv)
 #importing a list of coordinates for the corners of the film area for all videos
-corners <- read_csv("D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
-###In the other file here is where I create a blank dataframe to contain the final data
+corners <- read_csv("E://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+#creating a dataframe to hold the final data
+finalframe <- data.frame(matrix(ncol = 11, nrow = (length(list_csv)/fish)))
+colnames(finalframe) <- c("tankID", "treatment", "recording", "polarity",
+                          "shoal_area", "shoal_area_sd", "nearest_neighbor",
+                          "farthest_neighbor", "mean_neighbor",
+                          "wall_proximity", "space_use")
 ```
 
 
@@ -62,6 +67,10 @@ i = 1
 
 #probably should put a comment here
 for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
+  
+  #empty dataframe to hold the wall proximity values
+  wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+  colnames(wall_dist) <- c(1:4)
   
   #combining the files from all fish per video to be analyzed collectively
   shoal <- masterlist[i:(i+fish-1)]
@@ -125,8 +134,13 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     
     #adding the distance values into the distance dataframe
     for (d in 1:(length(neighbors))) {
-      distance <- neighbors[d]
+      distances[a,d] <- neighbors[d]
     }
+    
+    
+    #!!!!!!Need to deal with the fact that for specific videos there are only
+    #three total fish- the current code would exclude any shoal calculations
+    #for those videos!!!!!!#
     
     #calculating shoal areas, but only if all fish in the group are detected
     #for that frame
@@ -153,7 +167,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                          v[a,"angle"])), type = "angles",
                                          units = "radians", rotation = "clock",
                                          zero = 0))
-    shoal.angle$polarity[a] <- var.circular(circ)
+    shoal_angle$polarity[a] <- var.circular(circ)
     
     
     #calculating the distance between the fish and the nearest wall
@@ -185,13 +199,9 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                 corners$recording == parse_number(
                                                      file_str[[1]][3]
                               ),c(9:10,7:8)]
-    #empty dataframe to hold the wall proximity values
-    wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
     
     
     #calculate the distance for each wall, then take the smallest value
-    #I realize now this entire file is probably not the most efficient way to be
-    #doing things but it's way too late to fix that now
     for (f in (1:fish)) {
       tempdist <- c(NA, NA, NA, NA)
       for (w in 1:4) {
@@ -204,14 +214,73 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
       }
       wall_dist[a,f] <- min(tempdist)
     }
-      
   } #a loop end
   
+  
+  
+  #correcting for the noise in TRex's detection of fish locations using rolling
+  #averages
+  
+  #creating an empty dataframe to hold the rolling averages for neighbor
+  #distances
+  roll_neigh <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 6))
+  colnames(roll_neigh) <- c(1:6)
+  #calculating the rolling averages for neighbor distances
+  for (r in 1:6) {
+    roll_neigh[r] <- rollapply(distances[,r], width = 7, FUN = function(x)
+                             mean(x, na.rm = TRUE), partial = TRUE, fill = NA)
+  }
+  
+  #creating an empty dataframe to hold the rolling averages for polarity and
+  #shoal area
+  roll_polarea <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 2))
+  colnames(roll_polarea) <- c("shoal_area", "polarity")
+  #calculating the rolling average for shoal area
+  roll_polarea$shoal_area <- rollapply(shoal_angle$shoal_area, width = 7,
+                                       FUN = function(x) mean(x, na.rm = TRUE),
+                                       partial = TRUE, fill = NA)
+  #calculating the rolling average for polarity
+  roll_polarea$polarity <- rollapply(shoal_angle$polarity, width = 7,
+                                       FUN = function(x) mean(x, na.rm = TRUE),
+                                       partial = TRUE, fill = NA)
+  
+  #creating an empty dataframe to hold the rolling averages for wall proximity
+  roll_wall <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+  colnames(roll_wall) <- c(1:4)
+  #calculating the rolling mean for wall proximity
+  for (r in 1:4) {
+    roll_wall[r] <- rollapply(wall_dist[,r], width = 7, FUN = function(x)
+                             mean(x, na.rm = TRUE), partial = TRUE, fill = NA)
+  }
+  
+  
+  
+  #exporting the data
+  
+  #extracting the tankID and recording number from the file name of the
+  #current datafile
+  str_hold <- strsplit(list_csv[i], split = "_")
+  #adding the above information to the datafile to be exported
+  finalframe$tankID[k] <- str_hold[[1]][2]
+  finalframe$recording[k] <- str_hold[[1]][3]
+  
+  #adding the data calculated above to the final dataframe
+  finalframe$nearest_neighbor[k] <- min(unlist(roll_neigh, use.names = FALSE),
+                                     na.rm = TRUE)
+  finalframe$farthest_neighbor[k] <- max(unlist(roll_neigh, use.names = FALSE),
+                                      na.rm = TRUE)
+  finalframe$mean_neighbor[k] <- mean(unlist(roll_neigh, use.names = FALSE),
+                                      na.rm = TRUE)
+  finalframe$shoal_area[k] <- mean(roll_polarea$shoal_area, na.rm = TRUE)
+  finalframe$shoal_area_sd[k] <- stats::sd(roll_polarea$shoal_area, na.rm = TRUE)
+  finalframe$wall_proximity <- mean(unlist(roll_wall, use.names = FALSE),
+                                    na.rm = TRUE)
+  #high circular variance equals low polarity, so subtracting the variance from
+  #one to make the values more intuitive
+  finalframe$polarity[k] <- 1 - (mean(roll_polarea$polarity, na.rm = TRUE))
+  
+  i = i+fish
+} #k loop end
 
-  
-  
-  ###down here will go the noise corrections
-}
+write_csv(finalframe, "E://Turbidity Flux Experiment with OMR/6day_clay_proximity_data.csv")
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
