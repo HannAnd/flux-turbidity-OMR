@@ -161,38 +161,53 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     #extracting the tankID and recording number from the file name of the
     #current datafile
     file_str <- strsplit(list_csv[i], split = "_")
-    #creating a dataframe to hold the coordinates for the four corners of the
-    #filming area
-    walls <- data.frame(matrix(nrow = 4, ncol = 2))
-    colnames(walls) <- c("X", "Y")
-    #enumerating the columns from 'corners' being placed into 'walls'
-    XY = 3:4
-    #adding the film area coordinates to the dataframe with the order of
-    #bottom left corner, bottome right corner, top right corner, top left corner
-    for (w in 1:4) {
-      #####still need to check if this works!
-      walls[w,] <- corners[corners$tankID == file_str[[1]][2] &
-                            corners$recording == parse_number(
-                                                 file_str[[1]][3]
-                            ),XY]
-      XY <- XY+2
+    #creating a dataframe to hold the coordinates for each wall of the film
+    #area
+    walls <- data.frame(matrix(nrow = 4, ncol = 4))
+    colnames(walls) <- c("Ax", "Ay", "Bx", "By")
+    #bottom wall
+    walls[1,] <- corners[corners$tankID == file_str[[1]][2] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][3]
+                              ),3:6]
+    #left wall
+    walls[2,] <- corners[corners$tankID == file_str[[1]][2] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][3]
+                              ),c(3:4,9:10)]
+    #right wall
+    walls[3,] <- corners[corners$tankID == file_str[[1]][2] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][3]
+                              ),c(5:6,7:8)]
+    #top wall
+    walls[4,] <- corners[corners$tankID == file_str[[1]][2] &
+                                corners$recording == parse_number(
+                                                     file_str[[1]][3]
+                              ),c(9:10,7:8)]
+    #empty dataframe to hold the wall proximity values
+    wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+    
+    
+    #calculate the distance for each wall, then take the smallest value
+    #I realize now this entire file is probably not the most efficient way to be
+    #doing things but it's way too late to fix that now
+    for (f in (1:fish)) {
+      tempdist <- c(NA, NA, NA, NA)
+      for (w in 1:4) {
+        #wall coordinates 2 - fish coordinates
+        v1 <- as.numeric(walls[w,1:2] - walls[w,3:4])
+        #wall coordinates 1 - wall coordinates 2
+        v2 <- as.numeric(shoal[[f]][a,4:5] - walls[w,1:2])
+        m <- cbind(v1,v2)
+        tempdist[w] <- abs(det(m))/sqrt(sum(v1^2))
+      }
+      wall_dist[a,f] <- min(tempdist)
     }
-    
-    
+      
   } #a loop end
   
-  
-  ###to calculate distance to nearest wall:
-  ###-call on the correct 'corners' row corresponding to the current video
-  ###-for loop for the current video
-  ###-for loop for the current fish
-  ###-for each frame of the fish's file, calculate the distance between the
-  ### fish and all four walls
-  ###-take the smallest of these four distances and toss it into a dataframe
-  ###-once this has been done for all three fish, for each frame average the
-  ### values together (excluding frames where not all fish are detected)
-  ###-and then the noise correction will go in the designated noise correction
-  ### spot
+
   
   
   ###down here will go the noise corrections
