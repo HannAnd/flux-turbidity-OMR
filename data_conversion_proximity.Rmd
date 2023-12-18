@@ -68,13 +68,12 @@ i = 1
 #probably should put a comment here
 for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   
-  #empty dataframe to hold the wall proximity values
-  wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
-  colnames(wall_dist) <- c(1:4)
-  
   #combining the files from all fish per video to be analyzed collectively
   shoal <- masterlist[i:(i+fish-1)]
   
+  #empty dataframe to hold the wall proximity values
+  wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+  colnames(wall_dist) <- c(1:4)
   
   ##standardizing the length of each fish's file in a video so all files start
   ##at frame 0 and end at the last frame of the longest file
@@ -117,6 +116,69 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   #creating an empty dataframe to hold the polarity and shoal area values
   shoal_angle <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 2))
   colnames(shoal_angle) <- c("shoal_area", "polarity")
+  
+  #extracting the tankID and recording number from the file name of the
+  #current datafile
+  file_str <- strsplit(list_csv[i], split = "_")
+  
+  #creating a dataframe to hold the coordinates for each wall of the film area
+  #for use in calculating fish proximity to the nearest wall
+  walls <- data.frame(matrix(nrow = 4, ncol = 4))
+  colnames(walls) <- c("Ax", "Ay", "Bx", "By")
+  #bottom wall
+  walls[1,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),3:6]
+  #left wall
+  walls[2,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4,9:10)]
+  #right wall
+  walls[3,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(5:6,7:8)]
+  #top wall
+  walls[4,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(9:10,7:8)]
+  
+  #creating an empty dataframe to hold the coordinates for the corners of the
+  #film area for use in calculating shoal space use
+  film_area <- data.frame(matrix(nrow = 2, ncol = 4))
+  colnames(film_area) <- c("X", "Y")
+  #adding the film area coordinates to the dataframe, repeating the first set
+  #of coordinates because sf needs the first and last coordinates of a polygon
+  #to be the same to "complete" the polygon
+  film_area[1,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4)]
+  film_area[2,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(5:6)]
+  film_area[3,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(7:8)]
+  film_area[4,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(9:10)]
+  film_area[5,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4)]
+  #creating an sf polygon from the film area coordinates
+  film_poly <- st_polygon(x = list(as.matrix(film_area)))
+  film_grid <- st_make_grid(film_poly, n = c(20,24), what = "polygons",
+                            square = TRUE)
+  
+  
   
   #calculating nearest and farthest neighbor, polarity and shoal area
   for (a in 1:(maxframe+1)) {  #across one video of files
@@ -171,35 +233,6 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     
     
     #calculating the distance between the fish and the nearest wall
-    
-    #extracting the tankID and recording number from the file name of the
-    #current datafile
-    file_str <- strsplit(list_csv[i], split = "_")
-    #creating a dataframe to hold the coordinates for each wall of the film
-    #area
-    walls <- data.frame(matrix(nrow = 4, ncol = 4))
-    colnames(walls) <- c("Ax", "Ay", "Bx", "By")
-    #bottom wall
-    walls[1,] <- corners[corners$tankID == file_str[[1]][2] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][3]
-                              ),3:6]
-    #left wall
-    walls[2,] <- corners[corners$tankID == file_str[[1]][2] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][3]
-                              ),c(3:4,9:10)]
-    #right wall
-    walls[3,] <- corners[corners$tankID == file_str[[1]][2] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][3]
-                              ),c(5:6,7:8)]
-    #top wall
-    walls[4,] <- corners[corners$tankID == file_str[[1]][2] &
-                                corners$recording == parse_number(
-                                                     file_str[[1]][3]
-                              ),c(9:10,7:8)]
-    
     
     #calculate the distance for each wall, then take the smallest value
     for (f in (1:fish)) {
@@ -257,12 +290,9 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   
   #exporting the data
   
-  #extracting the tankID and recording number from the file name of the
-  #current datafile
-  str_hold <- strsplit(list_csv[i], split = "_")
-  #adding the above information to the datafile to be exported
-  finalframe$tankID[k] <- str_hold[[1]][2]
-  finalframe$recording[k] <- str_hold[[1]][3]
+  #using the filename information to the datafile to be exported
+  finalframe$tankID[k] <- file_str[[1]][2]
+  finalframe$recording[k] <- file_str[[1]][3]
   
   #adding the data calculated above to the final dataframe
   finalframe$nearest_neighbor[k] <- min(unlist(roll_neigh, use.names = FALSE),
@@ -273,7 +303,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                       na.rm = TRUE)
   finalframe$shoal_area[k] <- mean(roll_polarea$shoal_area, na.rm = TRUE)
   finalframe$shoal_area_sd[k] <- stats::sd(roll_polarea$shoal_area, na.rm = TRUE)
-  finalframe$wall_proximity <- mean(unlist(roll_wall, use.names = FALSE),
+  finalframe$wall_proximity[k] <- mean(unlist(roll_wall, use.names = FALSE),
                                     na.rm = TRUE)
   #high circular variance equals low polarity, so subtracting the variance from
   #one to make the values more intuitive
