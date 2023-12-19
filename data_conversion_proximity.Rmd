@@ -205,30 +205,29 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   film_grid_ID$fish2 <- lengths(st_intersects(film_grid_ID, fish2_coor))
   film_grid_ID$fish3 <- lengths(st_intersects(film_grid_ID, fish3_coor))
   
-  #testing
-  library(ggpubr)
-  testplot1 <- ggplot(film_grid_ID) +
-              geom_sf(aes(fill = fish0)) +
-              scale_fill_distiller(palette = "PiYG") +
-              geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
-  testplot2 <- ggplot(film_grid_ID) +
-              geom_sf(aes(fill = fish1)) +
-              scale_fill_distiller(palette = "PiYG") +
-              geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
-  testplot3 <- ggplot(film_grid_ID) +
-              geom_sf(aes(fill = fish2)) +
-              scale_fill_distiller(palette = "PiYG") +
-              geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
-  testplot4 <- ggplot(film_grid_ID) +
-              geom_sf(aes(fill = fish3)) +
-              scale_fill_distiller(palette = "PiYG") +
-              geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
-  show <- ggarrange(testplot1, testplot2, testplot3, testplot4,
-                    ncol = 2, nrow = 2)
-  
-  testpoly <- ggplot() +
-              geom_sf(data = film_grid, fill = NA) +
-              geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #the below commented-out code can be used to produce plots to test that the
+  #above detection code worked properly, with the red line overlaying each plot
+  #representing the film area and the color of the grid cells representing how
+  #many frames a fish occupied that space
+  #library(ggpubr)
+  #testplot1 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish0)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot2 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish1)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot3 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish2)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot4 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish3)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #show <- ggarrange(testplot1, testplot2, testplot3, testplot4,
+                    #ncol = 2, nrow = 2)
   
   #calculating nearest and farthest neighbor, polarity and shoal area
   for (a in 1:(maxframe+1)) {  #across one video of files
