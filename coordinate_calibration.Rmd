@@ -53,7 +53,7 @@ corners$tankID <- paste0("tank", corners$tankID)
 
 ## Calibration
 
-```{r calibration}
+```{r calibration, message = FALSE}
 for (k in 1:(length(list_csv))) {
   #importing current datafile
   fishfile <- read_csv(paste0(importpath, list_csv[k]), col_select = c(3:4, 6:8))
@@ -109,5 +109,5 @@ for (c in 1:(length(corners$tankID))) {
   calib_corners[c,3:10] <- calib_corners[c,3:10]*calibration
 }
 #exporting the calibrated 'corners' datafile
-write_csv(calib_corners, "D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+write_csv(calib_corners, "E://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 ```
