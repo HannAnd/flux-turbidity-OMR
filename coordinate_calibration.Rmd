@@ -109,5 +109,5 @@ for (c in 1:(length(corners$tankID))) {
   calib_corners[c,3:10] <- calib_corners[c,3:10]*calibration
 }
 #exporting the calibrated 'corners' datafile
-#write_csv(calib_corners, "D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+write_csv(calib_corners, "D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 ```
