@@ -29,7 +29,7 @@ shared between scripts.
 knitr::opts_chunk$set(echo = TRUE)
 
 #setting the working directory
-knitr::opts_knit$set(root.dir = "E://Turbidity Flux Experiment with OMR/calibrated_CSVs")
+knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/calibrated_CSVs")
 #loading packages
 library(tidyverse)
 library(data.table)
@@ -49,7 +49,7 @@ list_csv <- list.files(pattern = "*.csv")
 #from the file list, creating a list of dataframes
 masterlist <- lapply(list_csv, read_csv)
 #importing a list of coordinates for the corners of the film area for all videos
-corners <- read_csv("E://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+corners <- read_csv("D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 #creating a dataframe to hold the final data
 finalframe <- data.frame(matrix(ncol = 11, nrow = (length(list_csv)/fish)))
 colnames(finalframe) <- c("tankID", "treatment", "recording", "polarity",
@@ -183,8 +183,8 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   film_grid_ID <- st_sf(film_grid) %>%
           mutate(grid_id = 1:length(lengths(film_grid)))
   
-  #calculating the number of frames each grid is occupied by each fish during
-  #the video
+  #calculating the number of frames each grid cell is occupied by each fish
+  #during the video
   
   #converting the fish coordinates to sf objects
   fish0_coor <- shoal[[1]] %>%
@@ -199,7 +199,9 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   fish3_coor <- shoal[[4]] %>%
                 st_as_sf(coords = c("X", "Y"), remove = FALSE,
                           na.fail = FALSE)
-  #detecting the number of frames each fish in each grid cell
+  #detecting the number of frames each fish in each grid cell by counting the
+  #number of intersections between the fish location datapoints and the
+  #polygons of each grid cell
   film_grid_ID$fish0 <- lengths(st_intersects(film_grid_ID, fish0_coor))
   film_grid_ID$fish1 <- lengths(st_intersects(film_grid_ID, fish1_coor))
   film_grid_ID$fish2 <- lengths(st_intersects(film_grid_ID, fish2_coor))
@@ -228,6 +230,37 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
               #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
   #show <- ggarrange(testplot1, testplot2, testplot3, testplot4,
                     #ncol = 2, nrow = 2)
+  
+  #adding the intersections for all fish together for analysis as a group
+  film_grid_ID$total <- NA
+  for (x in 1:(length(film_grid_ID$grid_id))) {
+    film_grid_ID$total[x] <- sum(film_grid_ID$fish0[x], film_grid_ID$fish1[x],
+                                 film_grid_ID$fish2[x], film_grid_ID$fish3[x])
+  }
+  
+  #library(ggpubr)
+  #testplotx <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = total)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  
+  #binary yes/no defining if a cell has been used based on a threshold of
+  #'thresh' total intersections per cell
+  film_grid_ID$used <- NA
+  for (t in 1:(length(film_grid_ID$grid_id))) {
+    if (film_grid_ID$total[t] >= 30) {
+      film_grid_ID$used[t] <- 1
+    } else
+      film_grid_ID$used[t] <- 0
+  }
+  
+  length(which(film_grid_ID$used == 1))
+  length(which(film_grid_ID$used == 0))
+  
+  useplot <- ggplot(film_grid_ID) +
+    geom_sf(aes(fill = used)) +
+    scale_fill_distiller(palette = "PiYG") +
+    geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
   
   #calculating nearest and farthest neighbor, polarity and shoal area
   for (a in 1:(maxframe+1)) {  #across one video of files
