@@ -22,6 +22,9 @@ calculations of general movement patterns. If using one of these scripts after
 the other make sure to clear the working environment as many variable names are
 shared between scripts.
 
+NOTE: MAKE SURE TO CHANGE THE "experiment" VARIABLE IN SETUP TO THE APPROPRIATE
+VALUE OR THE CODE WILL EXCLUDE TWO VIDEOS FROM SHOAL AREA CALCULATIONS.
+
 
 ### Setup
 
@@ -38,6 +41,9 @@ library(sf)
 library(circular)
 #the number of fish in a group
 fish = 4
+#if processing the clay experiment, make the string "clay," if processing the
+#dye experiment, make the string "dye"
+experiment <- "clay"
 ```
 
 
@@ -238,7 +244,6 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                  film_grid_ID$fish2[x], film_grid_ID$fish3[x])
   }
   
-  #library(ggpubr)
   #testplotx <- ggplot(film_grid_ID) +
               #geom_sf(aes(fill = total)) +
               #scale_fill_distiller(palette = "PiYG") +
@@ -247,20 +252,23 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   #binary yes/no defining if a cell has been used based on a threshold of
   #'thresh' total intersections per cell
   film_grid_ID$used <- NA
+  thresh <- 30
   for (t in 1:(length(film_grid_ID$grid_id))) {
-    if (film_grid_ID$total[t] >= 30) {
+    if (film_grid_ID$total[t] >= thresh) {
       film_grid_ID$used[t] <- 1
     } else
       film_grid_ID$used[t] <- 0
   }
   
-  length(which(film_grid_ID$used == 1))
-  length(which(film_grid_ID$used == 0))
+  #length(which(film_grid_ID$used == 1))
+  #length(which(film_grid_ID$used == 0))
   
-  useplot <- ggplot(film_grid_ID) +
-    geom_sf(aes(fill = used)) +
-    scale_fill_distiller(palette = "PiYG") +
-    geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #useplot <- ggplot(film_grid_ID) +
+    #geom_sf(aes(fill = used)) +
+    #scale_fill_distiller(palette = "PiYG") +
+    #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #library(ggpubr)
+  #show <- ggarrange(testplotx, useplot, ncol = 2, nrow = 1)
   
   #calculating nearest and farthest neighbor, polarity and shoal area
   for (a in 1:(maxframe+1)) {  #across one video of files
@@ -300,8 +308,43 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
       shoal_angle$shoal_area[a] <- st_area(st_polygon(
                                            x = list(cbind(
                                                     coorpoly$X,coorpoly$Y))))
-    }
-    
+    #in the clay experiment, tank 3A lost one fish, giving it only three fish
+    #but files for four fish. The below code detects if the active file is one
+    #of the videos that contains only three fish and calculates shoal area if
+    #all three are present
+    } else if (experiment == "clay" & file_str[[1]][2] == "3A" &
+               file_str[[1]][3] != "record3" & file_str[[1]][3] != "record4") {
+      #due to there being four fish files but only three fish it's expected for
+      #there to be one NA in the X column and one in Y (one for each of the X,Y
+      #coordinates). This only calculates the shoal area if there are the
+      #expected NA values
+      if (sum(is.na(as.vector(coor$X))) = 1 &
+          sum(is.na(as.vector(coor$Y))) = 1) {
+          #removing the row with NAs so st_area() can process the polygon
+          coor <- na.omit(coor)
+          coorpoly <- rbind(coor, coor[1,])
+          coorpoly$X <- unlist(coorpoly$X)
+          coorpoly$Y <- unlist(coorpoly$Y)
+          shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                               x = list(cbind(
+                                                        coorpoly$X,coorpoly$Y))))
+      }
+    #the dye experiment also lost one fish before the third recording, though
+    #this time from tank 1A. The below code does the same as the above code does
+    #for the clay experiment's tank 3A videos
+    } else if (experiment == "dye" & file_str[[1]][2] == "1A" &
+               file_str[[1]][3] != "record3" & file_str[[1]][3] != "record4") {
+    if (sum(is.na(as.vector(coor$X))) = 1 &
+          sum(is.na(as.vector(coor$Y))) = 1) {
+          coor <- na.omit(coor)
+          coorpoly <- rbind(coor, coor[1,])
+          coorpoly$X <- unlist(coorpoly$X)
+          coorpoly$Y <- unlist(coorpoly$Y)
+          shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                               x = list(cbind(
+                                                        coorpoly$X,coorpoly$Y))))
+      }
+
     
     #calculating polarity, which is the variance of fish angles- since this
     #data is inherently circular we're using circular variance
