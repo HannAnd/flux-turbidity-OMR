@@ -283,16 +283,13 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     
     #calculating the distances between every fish
     neighbors <- as.vector(dist(coor))
-    
+      
     #adding the distance values into the distance dataframe
     for (d in 1:(length(neighbors))) {
       distances[a,d] <- neighbors[d]
     }
     
-    
-    #!!!!!!Need to deal with the fact that for specific videos there are only
-    #three total fish- the current code would exclude any shoal calculations
-    #for those videos!!!!!!#
+  
     
     #calculating shoal areas, but only if all fish in the group are detected
     #for that frame
@@ -334,7 +331,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     #for the clay experiment's tank 3A videos
     } else if (experiment == "dye" & file_str[[1]][2] == "1A" &
                file_str[[1]][3] != "record3" & file_str[[1]][3] != "record4") {
-    if (sum(is.na(as.vector(coor$X))) = 1 &
+      if (sum(is.na(as.vector(coor$X))) = 1 &
           sum(is.na(as.vector(coor$Y))) = 1) {
           coor <- na.omit(coor)
           coorpoly <- rbind(coor, coor[1,])
@@ -344,7 +341,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                                x = list(cbind(
                                                         coorpoly$X,coorpoly$Y))))
       }
-
+    }
     
     #calculating polarity, which is the variance of fish angles- since this
     #data is inherently circular we're using circular variance
@@ -355,6 +352,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
                                          units = "radians", rotation = "clock",
                                          zero = 0))
     shoal_angle$polarity[a] <- var.circular(circ)
+    
     
     
     #calculating the distance between the fish and the nearest wall
