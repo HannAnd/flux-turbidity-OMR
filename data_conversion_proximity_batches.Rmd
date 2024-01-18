@@ -478,6 +478,7 @@ for (k in 1:(batch*fish)) {  #across the every video in the current batch
       finalframe$treatment[k] <- "flux"
     } else {
       finalframe$treatment[k] <- "dye_error"
+    }
   }
   
   #adding the data calculated above to the final dataframe

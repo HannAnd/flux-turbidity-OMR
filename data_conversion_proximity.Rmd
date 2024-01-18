@@ -466,6 +466,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
       finalframe$treatment[k] <- "flux"
     } else {
       finalframe$treatment[k] <- "dye_error"
+    }
   }
   
   #adding the data calculated above to the final dataframe
