@@ -1,0 +1,515 @@
+---
+title: "Flu Turbidity Data Conversion for Proximity Tests, Batch Processing"
+author: "Hannah Anderson"
+date: "2024-01-18"
+output: pdf_document
+---
+
+## Introduction
+
+All below code is intended to be identical to the code from
+"data_conversion_proximity.Rmd", but this code has been modified to allow for
+running the datafiles in batches. Processing time for the original script
+was estimated to take ~24 hours of active runtime on my computer, so this code
+allows me to process the videos in smaller batches requiring less than 24 hours.
+
+
+
+Data for this experiment was captured using vertically mounted cameras observing
+the movement of zebrafish in shallow waters. The videos were then processed
+using the automated tracking program TRex, which returns individual files for
+each tracked fish for each video. Here, we are taking these individual fish
+files and 1) converting the frame-by-frame data into summary statistics for each
+video and 2) combining the data from the 900+ files into a singular dataset.
+This dataset is then exported to be used in statistical analyses.
+
+In this script specifically we are calculating values relating to proximity of
+fish to other fish and the external walls of the experimental chamber as well as
+polarity values for the fish shoals. See data_conversion_movement.Rmd for the
+calculations of general movement patterns. If using one of these scripts after
+the other make sure to clear the working environment as many variable names are
+shared between scripts.
+
+NOTE: MAKE SURE TO CHANGE THE "experiment" VARIABLE IN SETUP TO THE APPROPRIATE
+VALUE OR THE CODE WILL EXCLUDE TWO VIDEOS FROM SHOAL AREA CALCULATIONS.
+
+
+### Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#setting the working directory
+knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/calibrated_CSVs")
+#loading packages
+library(tidyverse)
+library(data.table)
+library(zoo)
+library(sf)
+library(circular)
+#the number of fish in a group
+fish = 4
+#if processing the clay experiment, make the string "clay," if processing the
+#dye experiment, make the string "dye"
+experiment <- "clay"
+#the tank IDs in each treatment for the clay experiment
+clayclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+               "tank6A", "tank6B", "tank2C", "tank2B")
+claystable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+                "tank3A", "tank6C", "tank1A", "tank10A")
+clayflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
+#the tank IDs in each treatment for the dye experiment
+dyeclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+              "tank6A", "tank6B", "tank2C", "tank2B")
+dyestable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+               "tank3A", "tank6C", "tank1A", "tank10A")
+dyeflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
+```
+
+
+### Importing Files
+
+```{r file read in, message = FALSE}
+#reading the file names into a list
+list_csv <- list.files(pattern = "*.csv")
+#from the file list, creating a list of dataframes
+masterlist <- lapply(list_csv, read_csv)
+#importing a list of coordinates for the corners of the film area for all videos
+corners <- read_csv("D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
+#creating a dataframe to hold the final data
+finalframe <- data.frame(matrix(ncol = 11, nrow = (length(list_csv)/fish)))
+colnames(finalframe) <- c("tankID", "treatment", "recording", "polarity",
+                          "shoal_area", "shoal_area_sd", "nearest_neighbor",
+                          "farthest_neighbor", "mean_neighbor",
+                          "wall_proximity", "space_use")
+```
+
+
+### Processing Files
+
+```{r loops, include = FALSE, message = FALSE}
+#the number of the first file to be processed
+i = 1
+#the number of videos to run in this batch of processing
+batch <- 10
+#the batch number, to be used when naming the exported file
+batch_num <- 1
+
+#probably should put a comment here
+for (k in 1:(batch*fish)) {  #across the every video in the current batch
+  
+  #combining the files from all fish per video to be analyzed collectively
+  shoal <- masterlist[i:(i+fish-1)]
+  
+  #empty dataframe to hold the wall proximity values
+  wall_dist <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+  colnames(wall_dist) <- c(1:4)
+  
+  ##standardizing the length of each fish's file in a video so all files start
+  ##at frame 0 and end at the last frame of the longest file
+  
+  #determining the last frame of a video by taking the largest frame value
+  #from all of the fish datafiles
+  maxframe <- max(unlist(lapply(shoal, function(m) m[,"frame"])))
+  #creating a dataframe filled with NAs to pad the missing frames from each file
+  dfNA <- data.frame(frame = 0:maxframe, fish_detected = NA, angle = NA,
+                     X = NA, Y = NA)
+  
+  
+  
+  for (z in 1:fish) {  #across one video of files
+    
+    #finding the starting frame of the current datafile
+    minfish <- min(shoal[[z]][,"frame"])
+    
+    #adding NA rows from dfNA to the start of a file when it starts on a frame
+    #later than 0
+    if (minfish > 0) {  #across one fish file within a video
+      shoal[[z]] <- rbind(dfNA[1:(minfish),], shoal[[z]])
+    }
+    
+    #finding the frame the current datafile ends on
+    maxfish <- max(shoal[[z]][,"frame"])
+    
+    #adding NA rows from dfNA to the end of a file when it ends earlier than the
+    #longest file from the current video
+    if(maxfish < maxframe) {  #across one fish file within a video
+      shoal[[z]] <- rbind(shoal[[z]], dfNA[(maxfish+2):(maxframe+1),])
+    }
+  } #z loop end
+  
+  
+  
+  #creating an empty dataframe to hold the neighbor distance values
+  distances <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 6))
+  colnames(distances) <- c(1:6)
+  #creating an empty dataframe to hold the polarity and shoal area values
+  shoal_angle <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 2))
+  colnames(shoal_angle) <- c("shoal_area", "polarity")
+  
+  #extracting the tankID and recording number from the file name of the
+  #current datafile
+  file_str <- strsplit(list_csv[i], split = "_")
+  
+  #creating a dataframe to hold the coordinates for each wall of the film area
+  #for use in calculating fish proximity to the nearest wall
+  walls <- data.frame(matrix(nrow = 4, ncol = 4))
+  colnames(walls) <- c("Ax", "Ay", "Bx", "By")
+  #bottom wall
+  walls[1,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),3:6]
+  #left wall
+  walls[2,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4,9:10)]
+  #right wall
+  walls[3,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(5:6,7:8)]
+  #top wall
+  walls[4,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(9:10,7:8)]
+  
+  #creating an empty dataframe to hold the coordinates for the corners of the
+  #film area for use in calculating shoal space use
+  film_area <- data.frame(matrix(nrow = 2, ncol = 4))
+  colnames(film_area) <- c("X", "Y")
+  #adding the film area coordinates to the dataframe, repeating the first set
+  #of coordinates because sf needs the first and last coordinates of a polygon
+  #to be the same to "complete" the polygon
+  film_area[1,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4)]
+  film_area[2,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(5:6)]
+  film_area[3,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(7:8)]
+  film_area[4,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(9:10)]
+  film_area[5,] <- corners[corners$tankID == file_str[[1]][2] &
+                       corners$recording == parse_number(
+                                            file_str[[1]][3]
+                                            ),c(3:4)]
+  #creating an sf polygon from the film area coordinates
+  film_poly <- st_polygon(x = list(as.matrix(film_area)))
+  #creating a grid from the film area polygon that's 20 cells wide by 24 cells
+  #high to match the 20cm x 24cm filming area
+  film_grid <- st_make_grid(film_poly, n = c(20,24), what = "polygons",
+                            square = TRUE)
+  #adding IDs to each grid cell
+  film_grid_ID <- st_sf(film_grid) %>%
+          mutate(grid_id = 1:length(lengths(film_grid)))
+  
+  #calculating the number of frames each grid cell is occupied by each fish
+  #during the video
+  
+  #converting the fish coordinates to sf objects
+  fish0_coor <- shoal[[1]] %>%
+                st_as_sf(coords = c("X", "Y"), remove = FALSE,
+                          na.fail = FALSE)
+  fish1_coor <- shoal[[2]] %>%
+                st_as_sf(coords = c("X", "Y"), remove = FALSE,
+                          na.fail = FALSE)
+  fish2_coor <- shoal[[3]] %>%
+                st_as_sf(coords = c("X", "Y"), remove = FALSE,
+                          na.fail = FALSE)
+  fish3_coor <- shoal[[4]] %>%
+                st_as_sf(coords = c("X", "Y"), remove = FALSE,
+                          na.fail = FALSE)
+  #detecting the number of frames each fish in each grid cell by counting the
+  #number of intersections between the fish location datapoints and the
+  #polygons of each grid cell
+  film_grid_ID$fish0 <- lengths(st_intersects(film_grid_ID, fish0_coor))
+  film_grid_ID$fish1 <- lengths(st_intersects(film_grid_ID, fish1_coor))
+  film_grid_ID$fish2 <- lengths(st_intersects(film_grid_ID, fish2_coor))
+  film_grid_ID$fish3 <- lengths(st_intersects(film_grid_ID, fish3_coor))
+  
+  #the below commented-out code can be used to produce plots to test that the
+  #above detection code worked properly, with the red line overlaying each plot
+  #representing the film area and the color of the grid cells representing how
+  #many frames a fish occupied that space
+  #library(ggpubr)
+  #testplot1 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish0)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot2 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish1)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot3 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish2)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #testplot4 <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = fish3)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #show <- ggarrange(testplot1, testplot2, testplot3, testplot4,
+                    #ncol = 2, nrow = 2)
+  
+  #adding the intersections for all fish together for analysis as a group
+  film_grid_ID$total <- NA
+  for (x in 1:(length(film_grid_ID$grid_id))) {
+    film_grid_ID$total[x] <- sum(film_grid_ID$fish0[x], film_grid_ID$fish1[x],
+                                 film_grid_ID$fish2[x], film_grid_ID$fish3[x])
+  }
+  
+  #testplotx <- ggplot(film_grid_ID) +
+              #geom_sf(aes(fill = total)) +
+              #scale_fill_distiller(palette = "PiYG") +
+              #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  
+  #binary yes/no defining if a cell has been used based on a threshold of
+  #'thresh' total intersections per cell
+  film_grid_ID$used <- NA
+  thresh <- 30
+  for (t in 1:(length(film_grid_ID$grid_id))) {
+    if (film_grid_ID$total[t] >= thresh) {
+      film_grid_ID$used[t] <- 1
+    } else
+      film_grid_ID$used[t] <- 0
+  }
+  
+  #length(which(film_grid_ID$used == 1))
+  #length(which(film_grid_ID$used == 0))
+  
+  #useplot <- ggplot(film_grid_ID) +
+    #geom_sf(aes(fill = used)) +
+    #scale_fill_distiller(palette = "PiYG") +
+    #geom_sf(data = st_zm(film_poly), fill = NA, color = "red")
+  #library(ggpubr)
+  #show <- ggarrange(testplotx, useplot, ncol = 2, nrow = 1)
+  
+  #calculating nearest and farthest neighbor, polarity and shoal area
+  for (a in 1:(maxframe+1)) {  #across one video of files
+    
+    #pulling the X,Y coordinates from each of the fish files in a video
+    coor <- data.frame(matrix(nrow = fish, ncol = 2))
+    colnames(coor) <- c("X", "Y")
+    for (p in 1:fish) {
+      coor$X[p] <- shoal[[p]][a,"X"]
+      coor$Y[p] <- shoal[[p]][a,"Y"]
+    }
+    
+    #calculating the distances between every fish
+    neighbors <- as.vector(dist(coor))
+      
+    #adding the distance values into the distance dataframe
+    for (d in 1:(length(neighbors))) {
+      distances[a,d] <- neighbors[d]
+    }
+    
+  
+    
+    #calculating shoal areas, but only if all fish in the group are detected
+    #for that frame
+    if (anyNA(as.vector(unlist(coor))) == FALSE) {
+      #sf needs the first and last coordinates of a polygon to be the same to
+      #finish drawing it
+      coorpoly <- rbind(coor, coor[1,])
+      #changing the classes of the columns back to numeric from list
+      coorpoly$X <- unlist(coorpoly$X)
+      coorpoly$Y <- unlist(coorpoly$Y)
+      #converting the coordinates to a polygon and adding to the polarity and
+      #shoal area dataframe
+      shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                           x = list(cbind(
+                                                    coorpoly$X,coorpoly$Y))))
+    #in the clay experiment, tank 3A lost one fish, giving it only three fish
+    #but files for four fish. The below code detects if the active file is one
+    #of the videos that contains only three fish and calculates shoal area if
+    #all three are present
+    } else if (experiment == "clay" & file_str[[1]][2] == "tank3A" &
+               file_str[[1]][3] != "record1" & file_str[[1]][3] != "record2") {
+      #due to there being four fish files but only three fish it's expected for
+      #there to be one NA in the X column and one in Y (one for each of the X,Y
+      #coordinates). This only calculates the shoal area if there are the
+      #expected NA values
+      if (sum(is.na(as.vector(coor$X))) == 1 &
+        sum(is.na(as.vector(coor$Y))) == 1) {
+        coor$X <- unlist(coor$X)
+        coor$Y <- unlist(coor$Y)
+        #removing the row with NAs so st_area() can process the polygon
+        coor <- na.omit(coor)
+        coorpoly <- rbind(coor, coor[1,])
+        shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                               x = list(cbind(
+                                                        coorpoly$X,coorpoly$Y))))
+      }
+    #the dye experiment also lost one fish before the third recording, though
+    #this time from tank 1A. The below code does the same as the above code does
+    #for the clay experiment's tank 3A videos
+    } else if (experiment == "dye" & file_str[[1]][2] == "tank1A" &
+               file_str[[1]][3] != "record1" & file_str[[1]][3] != "record2") {
+      if (sum(is.na(as.vector(coor$X))) == 1 &
+          sum(is.na(as.vector(coor$Y))) == 1) {
+        coor$X <- unlist(coor$X)
+        coor$Y <- unlist(coor$Y)
+         coor <- na.omit(coor)
+        coorpoly <- rbind(coor, coor[1,])
+        shoal_angle$shoal_area[a] <- st_area(st_polygon(
+                                              x = list(cbind(
+                                                       coorpoly$X,coorpoly$Y))))
+      }
+    }
+    
+    #calculating polarity, which is the variance of fish angles- since this
+    #data is inherently circular we're using circular variance
+    ##only calculates polarity if all fish are detected
+    
+    #converting the data into a "circular" object for the package 'circular'
+    circ <- suppressWarnings(as.circular(unlist(lapply(shoal, function(v)
+                                         v[a,"angle"])), type = "angles",
+                                         units = "radians", rotation = "clock",
+                                         zero = 0))
+    #the same as with shoal area, the below code determines if the current
+    #video is one of the ones containing three fish instead of four and, if it
+    #is, allows for the polarity to be calculated with only three fish
+    if (experiment == "clay" & file_str[[1]][2] == "tank3A" &
+               file_str[[1]][3] != "record1" & file_str[[1]][3] != "record2") {
+      if (sum(is.na(circ)) == 1) {
+        shoal_angle$polarity[a] <- var.circular(circ, na.rm = TRUE)
+      } else shoal_angle$polarity[a] <- NA
+    } else if (experiment == "dye" & file_str[[1]][2] == "tank1A" &
+               file_str[[1]][3] != "record1" & file_str[[1]][3] != "record2") {
+      if (sum(is.na(circ)) == 1) {
+        shoal_angle$polarity[a] <- var.circular(circ, na.rm = TRUE)
+      } else shoal_angle$polarity[a] <- NA
+    } else {
+          shoal_angle$polarity[a] <- var.circular(circ)
+    }
+    
+    
+    #calculating the distance between the fish and the nearest wall
+    
+    #calculate the distance for each wall, then take the smallest value
+    for (f in (1:fish)) {
+      tempdist <- c(NA, NA, NA, NA)
+      for (w in 1:4) {
+        #wall coordinates 2 - fish coordinates
+        v1 <- as.numeric(walls[w,1:2] - walls[w,3:4])
+        #wall coordinates 1 - wall coordinates 2
+        v2 <- as.numeric(shoal[[f]][a,4:5] - walls[w,1:2])
+        m <- cbind(v1,v2)
+        tempdist[w] <- abs(det(m))/sqrt(sum(v1^2))
+      }
+      wall_dist[a,f] <- min(tempdist)
+    }
+  } #a loop end
+  
+  
+  
+  #correcting for the noise in TRex's detection of fish locations using rolling
+  #averages
+  
+  #creating an empty dataframe to hold the rolling averages for neighbor
+  #distances
+  roll_neigh <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 6))
+  colnames(roll_neigh) <- c(1:6)
+  #calculating the rolling averages for neighbor distances
+  for (r in 1:6) {
+    roll_neigh[r] <- rollapply(distances[,r], width = 7, FUN = function(x)
+                             mean(x, na.rm = TRUE), partial = TRUE, fill = NA)
+  }
+  
+  #creating an empty dataframe to hold the rolling averages for polarity and
+  #shoal area
+  roll_polarea <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 2))
+  colnames(roll_polarea) <- c("shoal_area", "polarity")
+  #calculating the rolling average for shoal area
+  roll_polarea$shoal_area <- rollapply(shoal_angle$shoal_area, width = 7,
+                                       FUN = function(x) mean(x, na.rm = TRUE),
+                                       partial = TRUE, fill = NA)
+  #calculating the rolling average for polarity
+  roll_polarea$polarity <- rollapply(shoal_angle$polarity, width = 7,
+                                       FUN = function(x) mean(x, na.rm = TRUE),
+                                       partial = TRUE, fill = NA)
+  
+  #creating an empty dataframe to hold the rolling averages for wall proximity
+  roll_wall <- data.frame(matrix(nrow = nrow(shoal[[1]]), ncol = 4))
+  colnames(roll_wall) <- c(1:4)
+  #calculating the rolling mean for wall proximity
+  for (r in 1:4) {
+    roll_wall[r] <- rollapply(wall_dist[,r], width = 7, FUN = function(x)
+                             mean(x, na.rm = TRUE), partial = TRUE, fill = NA)
+  }
+  
+  
+  
+  
+  #exporting the data
+  
+  #using the filename information to the datafile to be exported
+  finalframe$tankID[k] <- file_str[[1]][2]
+  finalframe$recording[k] <- file_str[[1]][3]
+  #using the tankID and the experiment name to correctly assign treatment
+  if (experiment == "clay") {
+    if (finalframe$tankID[k] %in% clayclear == "TRUE") {
+      finalframe$treatment[k] <- "control"
+    } else if (finalframe$tankID[k] %in% claystable == "TRUE") {
+      finalframe$treatment[k] <- "stable"
+    } else if (finalframe$tankID[k] %in% clayflux == "TRUE") {
+      finalframe$treatment[k] <- "flux"
+    } else {
+      finalframe$treatment[k] <- "clay_error"
+    }
+  } else if (experiment == "dye") {
+    if (finalframe$tankID[k] %in% dyeclear == "TRUE") {
+      finalframe$treatment[k] <- "control"
+    } else if (finalframe$tankID[k] %in% dyestable == "TRUE") {
+      finalframe$treatment[k] <- "stable"
+    } else if (finalframe$tankID[k] %in% dyeflux == "TRUE") {
+      finalframe$treatment[k] <- "flux"
+    } else {
+      finalframe$treatment[k] <- "dye_error"
+  }
+  
+  #adding the data calculated above to the final dataframe
+  finalframe$nearest_neighbor[k] <- min(unlist(roll_neigh, use.names = FALSE),
+                                     na.rm = TRUE)
+  finalframe$farthest_neighbor[k] <- max(unlist(roll_neigh, use.names = FALSE),
+                                      na.rm = TRUE)
+  finalframe$mean_neighbor[k] <- mean(unlist(roll_neigh, use.names = FALSE),
+                                      na.rm = TRUE)
+  finalframe$shoal_area[k] <- mean(roll_polarea$shoal_area, na.rm = TRUE)
+  finalframe$shoal_area_sd[k] <- stats::sd(roll_polarea$shoal_area, na.rm = TRUE)
+  finalframe$wall_proximity[k] <- mean(unlist(roll_wall, use.names = FALSE),
+                                    na.rm = TRUE)
+  #high circular variance equals low polarity, so subtracting the variance from
+  #one to make the values more intuitive
+  finalframe$polarity[k] <- 1 - (mean(roll_polarea$polarity, na.rm = TRUE))
+  #taking the proportion of tank area grid cells used to the total number of
+  #cells (used or unused) as a measure of total space use by the shoal
+  finalframe$space_use[k] <- (length(which(film_grid_ID$used == 1)))/
+                             (length(which(film_grid_ID$used == 0)) +
+                              length(which(film_grid_ID$used == 1)))
+  
+  i = i+fish
+} #k loop end
+
+#the file name for the exported file including the current batch number
+filename <- "D://Turbidity Flux Experiment with OMR/6day_clay_proximity_data_"
+filename <- paste0(filename, "batch", batch_num, ".csv")
+write_csv(finalframe, filename)
+#reminding the user to keep track of the batch and i values
+remind <- paste0("WRITE THIS DOWN! This was batch ", batch_num,
+                 ". The next batch will be batch ", (batch_num+1),
+                 "! The next 'i' value will be ", i, "! WRITE THIS DOWN!")
+print(remind)
+```
