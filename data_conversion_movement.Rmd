@@ -27,7 +27,7 @@ females per group.
 knitr::opts_chunk$set(echo = TRUE)
 
 #setting the working directory
-knitr::opts_knit$set(root.dir = "D://Turbidity Flux Experiment with OMR/calibrated_CSVs")
+knitr::opts_knit$set(root.dir = "D://Clay Flux Experiment with OMR/calibrated_CSVs")
 library(tidyverse)
 library(data.table)
 library(zoo)
@@ -35,6 +35,24 @@ library(zoo)
 fish = 4
 #creating column names for each fish in the group
 whichfish <- paste0("fish", 1:fish)
+
+#if processing the clay experiment, make the string below "clay", if processing
+#the dye experiment make the string "dye"
+experiment <- "clay"
+#the tank IDs in each treatment for the clay experiment
+clayclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+               "tank6A", "tank6B", "tank2C", "tank2B")
+claystable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+                "tank3A", "tank6C", "tank1A", "tank10A")
+clayflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
+#the tank IDs in each treatment for the dye experiment
+dyeclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+              "tank6A", "tank6B", "tank2C", "tank2B")
+dyestable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+               "tank3A", "tank6C", "tank1A", "tank10A")
+dyeflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
 ```
 
 
@@ -74,8 +92,6 @@ The definition of each variable in the original datafile is as follows:
 list_csv <- list.files(pattern = "*.csv")
 #from the list, creating a list of dataframes
 masterlist <- lapply(list_csv, read_csv)
-#importing the list of corner coordinates for each video
-corners <- read_csv("D://Turbidity Flux Experiment with OMR/calibrated_corner_coordinates.csv")
 #creating a dataframe to hold the final product
 finalframe <- data.frame(matrix(ncol = 7, nrow = (length(list_csv)/fish)))
 ###this will need to change at some point###
@@ -102,7 +118,9 @@ they are combined and summarized into a master datafile containing information
 from all fish videos.
 
 ```{r loop, include = FALSE, message = FALSE}
+#enumerating the file number
 i = 1
+
 for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   #combining the files from all fish per video to be analyzed collectively
   shoal <- masterlist[i:(i+fish-1)]
@@ -130,7 +148,6 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     
     #adding NA rows from dfNA to start of file when it starts on a frame later
     #than 0
-   
      if (minfish > 0) {  #across one fish file within a video
       shoal[[z]] <- rbind(dfNA[1:(minfish),], shoal[[z]])
     }
@@ -163,12 +180,11 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     simpspeed <- data.frame(matrix(nrow = floor(nrow(dista)/30), ncol = 3))
     colnames(simpspeed) <- c("time", "speed", "activity")
     simpspeed$time <- 1:(floor(nrow(dista)/30))
-    #videos are ~30 frames per second (29.7 frames), using floor() to round down
-    #to the nearest whole second
+    #videos are ~30 frames per second (29.7 frames), so calculating here the
+    #distance traveled in one second across the entire video
     n = 1
     for (s in 1:(floor(nrow(dista)/30))) {  #within one fish's file
       simpspeed$speed[s] <- sum(dista$distance_cm[n:(s*30)], na.rm = TRUE)
-      #if (simpspeed$speed[s] )
       n = n + 30
     }
   
@@ -192,6 +208,7 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
     
     shoalspeed[,z] <- rollspeed$speed
     shoalaccel[,z] <- rollspeed$acceleration
+    
     
     #calculating the ratio of time fish spent active vs inactive by converting
     #all speeds less than or equal to 1.5 to the value "still" and all speeds
@@ -226,17 +243,45 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
       }
       window = window + 7
     }
+    
   
   } #for z
+  
   #taking the file name of the currently iterated file and splitting the name
   #into the three sections divided by "_". The first and the third sections of
   #each filename are the tank ID and the recording number, respectively
   str_hold <- strsplit(list_csv[i], split = "_")
   
-  #calculating the summary statistics and placing them in the correct place
-  #on the master dataframe
-  finalframe$tankID[k] <- str_hold[[1]][1]
-  finalframe$recording[k] <- str_hold[[1]][2]
+  #using the filename information to label the tank ID and recording number for
+  #each row of the datafile
+  finalframe$tankID[k] <- str_hold[[1]][2]
+  finalframe$recording[k] <- str_hold[[1]][3]
+  #using the tank ID and the experiment name to correctly assign treatment
+  if (experiment == "clay") {
+    if (finalframe$tankID[k] %in% clayclear == "TRUE") {
+      finalframe$treatment[k] <- "control"
+    } else if (finalframe$tankID[k] %in% claystable == "TRUE") {
+      finalframe$treatment[k] <- "stable"
+    } else if (finalframe$tankID[k] %in% clayflux == "TRUE") {
+      finalframe$treatment[k] <- "flux"
+    } else {
+      finalframe$treatment[k] <- "clay_error"
+    }
+  } else if (experiment == "dye") {
+    if (finalframe$tankID[k] %in% dyeclear == "TRUE") {
+      finalframe$treatment[k] <- "control"
+    } else if (finalframe$tankID[k] %in% dyestable == "TRUE") {
+      finalframe$treatment[k] <- "stable"
+    } else if (finalframe$tankID[k] %in% dyeflux == "TRUE") {
+      finalframe$treatment[k] <- "flux"
+    } else {
+      finalframe$treatment[k] <- "dye_error"
+    }
+  }
+  
+  
+  #addubg the data calculated above to the final dataframe
+  
   #due to the way speed was calculated, adding all the speeds together also
   #gives the total distance moved
   finalframe$totaldist_cm[k] <- sum(unlist(shoalspeed, use.names = FALSE),
@@ -257,5 +302,5 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   i = i+fish
 }
 
-write_csv(finalframe, "E://2 Day Mini Kaolin Turb Flux Experiment/2day_clay_movement_data.csv")
+write_csv(finalframe, "D://Clay Flux Experiment with OMR/6day_clay_movement_data.csv")
 ```
