@@ -41,7 +41,8 @@ library(sf)
 library(circular)
 #the number of fish in a group
 fish = 4
-#if processing the clay experiment, make the string "clay," if processing the
+
+#if processing the clay experiment, make the string "clay", if processing the
 #dye experiment, make the string "dye"
 experiment <- "clay"
 #the tank IDs in each treatment for the clay experiment
@@ -439,11 +440,10 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   }
   
   
-  
-  
   #exporting the data
   
-  #using the filename information to the datafile to be exported
+  #using the filename information to label the tank ID and recording number for
+  #each row of the datafile
   finalframe$tankID[k] <- file_str[[1]][2]
   finalframe$recording[k] <- file_str[[1]][3]
   #using the tankID and the experiment name to correctly assign treatment

@@ -27,7 +27,7 @@ females per group.
 knitr::opts_chunk$set(echo = TRUE)
 
 #setting the working directory
-knitr::opts_knit$set(root.dir = "D://Clay Flux Experiment with OMR/calibrated_CSVs")
+knitr::opts_knit$set(root.dir = "D://Dye Flux Experiment with OMR/calibrated_CSVs")
 library(tidyverse)
 library(data.table)
 library(zoo)
@@ -302,5 +302,5 @@ for (k in 1:(length(list_csv)/fish)) {  #across the whole file list
   i = i+fish
 }
 
-write_csv(finalframe, "D://Clay Flux Experiment with OMR/6day_clay_movement_data.csv")
+write_csv(finalframe, "D://Dye Flux Experiment with OMR/6day_dye_movement_data.csv")
 ```
