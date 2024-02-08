@@ -95,13 +95,15 @@ box_count <- claydata %>%
              geom_boxplot() +
              labs(title = "Clay Experiment: Behavior Counts",
                   subtitle = "Across All Recordings") +
-             xlab("Behaviors") + ylab("Counts of Behaviors per Recording") +
+             xlab("Behaviors") + ylab("Number of Behaviors per Recording") +
              scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
              theme_classic()
 box_dura <- claydata %>%
-            filter(behavior %in% c("chase", "lat_display", "follow")) %>%
+            filter(behavior %in% c("chase", "lat_display", "follow",
+                                   "all_aggression", "all_behaviors")) %>%
             mutate(behavior = fct_relevel(behavior, "chase", "lat_display",
-                                                    "follow")) %>%
+                                                    "follow", "all_aggression",
+                                                    "all_behaviors")) %>%
             mutate(treatment = fct_relevel(treatment, "clear", "stable",
                                                      "flux")) %>%
             ggplot(aes(x = behavior, y = duration_s, fill = treatment)) +
@@ -112,4 +114,342 @@ box_dura <- claydata %>%
             ylab("Mean Time Spent Performing Behavior (s)") +
             scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
             theme_classic()
+
+#box plots of counts across all treatments, separated by recording
+time_chase_c <- claydata %>%
+                filter(behavior == "chase") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = recording, y = behav_count,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Chase Counts",
+                     subtitle = "All Data by Recording") +
+                xlab("Treatments") + ylab("Number of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                geom_vline(xintercept = 2.5, linetype = "dashed",
+                           color = "gray", linewidth = 1.5) +
+                theme_classic()
+time_lat_c <- claydata %>%
+              filter(behavior == "lat_display") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Lateral Display Counts",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") +
+              ylab("Number of Lateral Displays per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_cont_c <- claydata %>%
+                filter(behavior == "agg_contact") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = recording, y = behav_count,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Aggressive Contacts Counts",
+                     subtitle = "All Data by Recording") +
+                xlab("Treatments") + ylab("Number of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                geom_vline(xintercept = 2.5, linetype = "dashed",
+                           color = "gray", linewidth = 1.5) +
+                theme_classic()
+time_foll_c <- claydata %>%
+               filter(behavior == "follow") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "stable", "flux")) %>%
+               ggplot(aes(x = recording, y = behav_count,
+                          fill = treatment)) +
+               geom_boxplot() +
+               labs(title = "Clay Experiment: Follow Counts",
+                    subtitle = "All Data by Recording") +
+               xlab("Treatments") + ylab("Number of Follows per Recording") +
+               scale_fill_manual(values = c("slategray1", "wheat1",
+                                            "wheat4")) +
+               geom_vline(xintercept = 2.5, linetype = "dashed",
+                          color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_all_c <- claydata %>%
+              filter(behavior == "all_behaviors") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Total Behavior Counts",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") + ylab("Number of Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_angr_c <- claydata %>%
+              filter(behavior == "all_aggression") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Aggression Counts",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") +
+              ylab("Number of Aggressive Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_arrange_c <- ggarrange(time_chase_c, time_lat_c, time_cont_c, time_foll_c,
+                            time_angr_c, time_all_c, ncol = 3, nrow = 2)
+
+#boxplots of durations across all treatments, separated by recording
+time_chase_d <- claydata %>%
+                filter(behavior == "chase") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = recording, y = duration_s,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Chase Durations",
+                     subtitle = "All Data by Recording") +
+                xlab("Treatments") +
+                ylab("Mean Duration of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                geom_vline(xintercept = 2.5, linetype = "dashed",
+                           color = "gray", linewidth = 1.5) +
+                theme_classic()
+time_lat_d <- claydata %>%
+              filter(behavior == "lat_display") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Lateral Display Durations",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") +
+              ylab("Mean Duration of Lateral Displays per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_foll_d <- claydata %>%
+               filter(behavior == "follow") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "stable", "flux")) %>%
+               ggplot(aes(x = recording, y = duration_s,
+                          fill = treatment)) +
+               geom_boxplot() +
+               labs(title = "Clay Experiment: Follow Durations",
+                    subtitle = "All Data by Recording") +
+               xlab("Treatments") + ylab("Mean Duration of Follows per Recording") +
+               scale_fill_manual(values = c("slategray1", "wheat1",
+                                            "wheat4")) +
+               geom_vline(xintercept = 2.5, linetype = "dashed",
+                          color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_all_d <- claydata %>%
+              filter(behavior == "all_behaviors") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Total Behavior Durations",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") +
+              ylab("Mean Duration of All Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_angr_d <- claydata %>%
+              filter(behavior == "all_aggression") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Aggression Durations",
+                   subtitle = "All Data by Recording") +
+              xlab("Treatments") +
+              ylab("Mean Duration of Aggressive Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              geom_vline(xintercept = 2.5, linetype = "dashed",
+                         color = "gray", linewidth = 1.5) +
+              theme_classic()
+time_arrange_d <- ggarrange(time_chase_d, time_lat_d, time_foll_d,
+                            time_angr_d, time_all_d, ncol = 3, nrow = 2)
+
+#box plots of counts by the visibility level in the flux condition during the
+#recording (high or low)
+hilo_chase_c <- claydata %>%
+                filter(behavior == "chase") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = flux_level, y = behav_count,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Chase Counts",
+                     subtitle = "All Data by Flux Visibility") +
+                xlab("Treatments") + ylab("Number of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                theme_classic()
+hilo_lat_c <- claydata %>%
+              filter(behavior == "lat_display") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = flux_level, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Lateral Display Counts",
+                   subtitle = "All Data by by Flux Visibility") +
+              xlab("Treatments") +
+              ylab("Number of Lateral Displays per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_cont_c <- claydata %>%
+                filter(behavior == "agg_contact") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = flux_level, y = behav_count,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Aggressive Contacts Counts",
+                     subtitle = "All Data by Flux Visibility") +
+                xlab("Treatments") + ylab("Number of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                theme_classic()
+hilo_foll_c <- claydata %>%
+               filter(behavior == "follow") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "stable", "flux")) %>%
+               ggplot(aes(x = flux_level, y = behav_count,
+                          fill = treatment)) +
+               geom_boxplot() +
+               labs(title = "Clay Experiment: Follow Counts",
+                    subtitle = "All Data by Flux Visibility") +
+               xlab("Treatments") + ylab("Number of Follows per Recording") +
+               scale_fill_manual(values = c("slategray1", "wheat1",
+                                            "wheat4")) +
+              theme_classic()
+hilo_all_c <- claydata %>%
+              filter(behavior == "all_behaviors") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = flux_level, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Total Behavior Counts",
+                   subtitle = "All Data by Flux Visibility") +
+              xlab("Treatments") + ylab("Number of Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_angr_c <- claydata %>%
+              filter(behavior == "all_aggression") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = recording, y = behav_count,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Aggression Counts",
+                   subtitle = "All Data by Flux Visibility") +
+              xlab("Treatments") +
+              ylab("Number of Aggressive Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_arrange_c <- ggarrange(hilo_chase_c, hilo_lat_c, hilo_cont_c, hilo_foll_c,
+                            hilo_angr_c, hilo_all_c, ncol = 3, nrow = 2)
+
+#box plots of durations by the visibility level in the flux condition during the
+#recording (high or low)
+hilo_chase_d <- claydata %>%
+                filter(behavior == "chase") %>%
+                mutate(treatment = fct_relevel(treatment,
+                                               "clear", "stable", "flux")) %>%
+                ggplot(aes(x = flux_level, y = duration_s,
+                           fill = treatment)) +
+                geom_boxplot() +
+                labs(title = "Clay Experiment: Chase Durations",
+                     subtitle = "All Data by Flux Visibility") +
+                xlab("Treatments") +
+                ylab("Mean Duration of Chases per Recording") +
+                scale_fill_manual(values = c("slategray1", "wheat1",
+                                             "wheat4")) +
+                theme_classic()
+hilo_lat_d <- claydata %>%
+              filter(behavior == "lat_display") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = flux_level, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Lateral Display Durations",
+                   subtitle = "All Data by Flux Visibility") +
+              xlab("Treatments") +
+              ylab("Mean Duration of Lateral Displays per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_foll_d <- claydata %>%
+               filter(behavior == "follow") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "stable", "flux")) %>%
+               ggplot(aes(x = flux_level, y = duration_s,
+                          fill = treatment)) +
+               geom_boxplot() +
+               labs(title = "Clay Experiment: Follow Durations",
+                    subtitle = "All Data by Flux Visibility") +
+               xlab("Treatments") + ylab("Mean Duration of Follows per Recording") +
+               scale_fill_manual(values = c("slategray1", "wheat1",
+                                            "wheat4")) +
+              theme_classic()
+hilo_all_d <- claydata %>%
+              filter(behavior == "all_behaviors") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = flux_level, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Total Behavior Durations",
+                   subtitle = "All Data by Flux Visibility") +
+              xlab("Treatments") +
+              ylab("Mean Duration of All Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_angr_d <- claydata %>%
+              filter(behavior == "all_aggression") %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "stable", "flux")) %>%
+              ggplot(aes(x = flux_level, y = duration_s,
+                         fill = treatment)) +
+              geom_boxplot() +
+              labs(title = "Clay Experiment: Aggression Durations",
+                   subtitle = "All Data by Flux Visibility") +
+              xlab("Treatments") +
+              ylab("Mean Duration of Aggressive Behaviors per Recording") +
+              scale_fill_manual(values = c("slategray1", "wheat1",
+                                           "wheat4")) +
+              theme_classic()
+hilo_arrange_d <- ggarrange(hilo_chase_d, hilo_lat_d, hilo_foll_d,
+                            hilo_angr_d, hilo_all_d, ncol = 3, nrow = 2)
 ```
