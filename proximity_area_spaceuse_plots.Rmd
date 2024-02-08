@@ -145,7 +145,7 @@ time_polarity <- claydata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
-                 color = "gray", linewidth = 1.5) +
+                           color = "gray", linewidth = 1.5) +
                  theme_classic()
 time_shoalarea <- claydata %>%
                   mutate(treatment = fct_relevel(treatment,
@@ -158,7 +158,7 @@ time_shoalarea <- claydata %>%
                   scale_fill_manual(values =
                                     c("slategray1", "wheat1", "wheat4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
-                  color = "gray", linewidth = 1.5) +
+                             color = "gray", linewidth = 1.5) +
                   theme_classic()
 time_neighbor <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -172,7 +172,7 @@ time_neighbor <- claydata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
-                 color = "gray", linewidth = 1.5) +
+                            color = "gray", linewidth = 1.5) +
                  theme_classic()
 time_walls <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -187,7 +187,7 @@ time_walls <- claydata %>%
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
-              color = "gray", linewidth = 1.5) +
+                         color = "gray", linewidth = 1.5) +
               theme_classic()
 time_space <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -199,7 +199,7 @@ time_space <- claydata %>%
               xlab("Treatments") + ylab("Proportion of Space Used") + 
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
-              color = "gray", linewidth = 1.5) +
+                         color = "gray", linewidth = 1.5) +
               theme_classic()
 time_arrange <- ggarrange(time_polarity, time_shoalarea, time_neighbor,
                          time_walls, time_space, ncol = 3, nrow = 2)
@@ -381,7 +381,7 @@ time_polarity <- dyedata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
-                 color = "gray", linewidth = 1.5) +
+                            color = "gray", linewidth = 1.5) +
                  theme_classic()
 time_shoalarea <- dyedata %>%
                   mutate(treatment = fct_relevel(treatment,
@@ -394,7 +394,7 @@ time_shoalarea <- dyedata %>%
                   scale_fill_manual(values =
                                     c("slategray1", "snow3", "snow4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
-                  color = "gray", linewidth = 1.5) +
+                             color = "gray", linewidth = 1.5) +
                   theme_classic()
 time_neighbor <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -408,7 +408,7 @@ time_neighbor <- dyedata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
-                 color = "gray", linewidth = 1.5) +
+                            color = "gray", linewidth = 1.5) +
                  theme_classic()
 time_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -423,7 +423,7 @@ time_walls <- dyedata %>%
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
-              color = "gray", linewidth = 1.5) +
+                         color = "gray", linewidth = 1.5) +
               theme_classic()
 time_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -435,7 +435,7 @@ time_space <- dyedata %>%
               xlab("Treatments") + ylab("Proportion of Space Used") + 
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
-              color = "gray", linewidth = 1.5) +
+                         color = "gray", linewidth = 1.5) +
               theme_classic()
 time_arrange <- ggarrange(time_polarity, time_shoalarea, time_neighbor,
                          time_walls, time_space, ncol = 3, nrow = 2)
