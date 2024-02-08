@@ -1,0 +1,115 @@
+---
+title: "BORIS Plots"
+author: "Hannah Anderson"
+date: "2024-02-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C://Users/hande/Documents/R/fluctuating-turbidity2")
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+
+claydata <- read_csv("OMRclay_BORIS_all.csv")
+#dyedata <- read_csv("OMRdye_BORIS_all.csv")
+
+#adding identifier for the visibility in flux treatment during each recording
+claydata$flux_level <- claydata$recording %>%
+                       fct_collapse(high = c("record1", "record3"),
+                                    low = c("record2", "record4"))
+#dyedata$flux_level <- dyedata$recording %>%
+                      #fct_collapse(high = c("record1", "record3"),
+                                   #low = c("record2", "record4"))
+```
+
+
+## Clay Plots
+
+```{r clay, echo = FALSE}
+#basic histogram plots to look at distributions across all treatments and
+#combining all recordings
+hist_chase <- claydata %>%
+              filter(behavior == "chase") %>%
+              ggplot(aes(x = behav_count, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Clay Experiment: Chase Counts") +
+              xlab("Total Number of Chases") +
+              scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+              theme_classic()
+hist_lat <- claydata %>%
+            filter(behavior == "lat_display") %>%
+            ggplot(aes(x = behav_count, fill = treatment)) +
+            geom_histogram(position = "identity", alpha = 0.5) +
+            labs(title = "Clay Experiment: Lateral Display Counts") +
+            xlab("Total Number of Lateral Displays") +
+            scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+            theme_classic()
+hist_cont <- claydata %>%
+             filter(behavior == "agg_contact") %>%
+             ggplot(aes(x = behav_count, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Clay Experiment: Aggressive Contact Counts") +
+             xlab("Total Number of Aggressive Contacts") +
+             scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+             theme_classic()
+hist_foll <- claydata %>%
+             filter(behavior == "follow") %>%
+             ggplot(aes(x = behav_count, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Clay Experiment: Follow Counts") +
+             xlab("Total Number of Follows") +
+             scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+             theme_classic()
+hist_angr <- claydata %>%
+             filter(behavior == "all_aggression") %>%
+             ggplot(aes(x = behav_count, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Clay Experiment: All Aggression Counts") +
+             xlab("Total Number of Aggressive Acts") +
+             scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+             theme_classic()
+hist_all <- claydata %>%
+            filter(behavior == "all_behaviors") %>%
+            ggplot(aes(x = behav_count, fill = treatment)) +
+            geom_histogram(position = "identity", alpha = 0.5) +
+            labs(title = "Clay Experiment: Total Behavior Counts") +
+            xlab("Total Number of All Behaviors") +
+            scale_fill_manual(values = c("slategray1", "khaki", "tomato")) +
+            theme_classic()
+hist_arrange <- ggarrange(hist_chase, hist_lat, hist_cont, hist_foll,
+                          hist_angr, hist_all, ncol = 3, nrow = 2)
+
+
+#box plots across all treatments, including all recordings
+box_count <- claydata %>%
+             mutate(behavior = fct_relevel(behavior, "chase", "lat_display",
+                                                     "agg_contact", "follow",
+                                                     "all_aggression",
+                                                     "all_behaviors")) %>%
+             mutate(treatment = fct_relevel(treatment, "clear", "stable",
+                                                       "flux")) %>%
+             ggplot(aes(x = behavior, y = behav_count, fill = treatment)) +
+             geom_boxplot() +
+             labs(title = "Clay Experiment: Behavior Counts",
+                  subtitle = "Across All Recordings") +
+             xlab("Behaviors") + ylab("Counts of Behaviors per Recording") +
+             scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+             theme_classic()
+box_dura <- claydata %>%
+            filter(behavior %in% c("chase", "lat_display", "follow")) %>%
+            mutate(behavior = fct_relevel(behavior, "chase", "lat_display",
+                                                    "follow")) %>%
+            mutate(treatment = fct_relevel(treatment, "clear", "stable",
+                                                     "flux")) %>%
+            ggplot(aes(x = behavior, y = duration_s, fill = treatment)) +
+            geom_boxplot() +
+            labs(title = "Clay Experiment: Behavior Durations",
+                 subtitle = "Across All Recordings") +
+            xlab("Behaviors") +
+            ylab("Mean Time Spent Performing Behavior (s)") +
+            scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+            theme_classic()
+```
