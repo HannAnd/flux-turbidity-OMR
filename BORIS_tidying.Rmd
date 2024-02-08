@@ -108,11 +108,14 @@ clay_coll <- rbind(clay_coll, clay_agg)
 
 #creating additional rows that aggregate together just the aggressive behaviors
 #to investigate the general aggressive trends
-clay_dura_angr <- aggregate(duration_s ~ tankID + recording,
-                            data = clay_donya, FUN = "mean")
+clay_dura_angr <- clay_coll %>%
+                  filter(behavior %in% c("chase", "lat_display")) %>%        
+                  aggregate(duration_s ~ tankID + recording, FUN = "mean")
 #aggregating the counts of all behaviors
-clay_count_angr <- aggregate(behav_count ~ tankID + recording,
-                             data = clay_coll, FUN = "sum")
+clay_count_angr <- clay_coll %>%
+                   filter(behavior %in% c("chase", "lat_display",
+                                          "agg_contact")) %>%  
+                   aggregate(behav_count ~ tankID + recording, FUN = "sum")
 #binding the aggregated count and duration data together
 clay_angr <- full_join(clay_dura_angr, clay_count_angr, by = c("tankID",
                                                                "recording"))
