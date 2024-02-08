@@ -1,0 +1,182 @@
+---
+title: "BORIS Data Tidying"
+author: "Hannah Anderson"
+date: "2024-02-05"
+output: pdf_document
+---
+
+## Setup
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+#the data files produced by our video scorers
+clay_donya <- read_csv("6day_clay_Donya.csv")
+#dye_noah <- read_csv("6day_dye_Noah.csv")
+#dye_lucas <- read_csv("6day_dye_Lucas.csv")
+
+#the tank IDs in each treatment for the clay experiment
+clayclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+               "tank6A", "tank6B", "tank2C", "tank2B")
+claystable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+                "tank3A", "tank6C", "tank1A", "tank10A")
+clayflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
+#the tank IDs in each treatment for the dye experiment
+dyeclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
+              "tank6A", "tank6B", "tank2C", "tank2B")
+dyestable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
+               "tank3A", "tank6C", "tank1A", "tank10A")
+dyeflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
+             "tank5A", "tank4B", "tank4A", "tank7B")
+```
+
+
+## Cleaning base data
+
+Fixing any discrepancies, mistakes or clarity problems in the original datasets.
+
+```{r tidying}
+#trimming down the data frames so they only contain useful columns
+clay_donya <- clay_donya[,c(9:10,13,18)]
+#dye_noah <- dye_noah[,c(9:10,13,18)]
+#dye_lucas <- dye_lucas[,c(9:10,13,18)]
+
+#changing the column names to be more R friendly
+sharecol <- c("tankID", "recording", "behavior", "duration_s")
+colnames(clay_donya) <- sharecol
+#colnames(dye_noah) <- sharecol
+#colnames(dye_lucas) <- sharecol
+
+#making sure the behavior names are universal across all datafiles
+clay_donya$behavior[clay_donya$behavior == "aggressive contact"] <- "agg_contact"
+clay_donya$behavior[clay_donya$behavior == "lateral display"] <- "lat_display"
+
+#combining the files from different scorers for the same experiment
+#dye_all <- rbind(dye_noah, dye_lucas)
+
+#adding the string "tank" to the beginning of the tank IDs to make it consistent
+#with the other datasets
+clay_donya$tankID <- paste0("tank", clay_donya$tankID)
+#dye_all$tankID <- paste0("tank", dye_all$tankID)
+
+#adding the string "record" to the beginning of the recording numbers to make it
+#consistent with the other datasets
+clay_donya$recording <- paste0("record", clay_donya$recording)
+```
+
+
+## Summarizing the Clay Data
+
+Summarizing and collapsing the clay data together so that they're in a more
+usable form for analysis.
+
+```{r clay_collapse}
+#collapsing the behaviors into counts and durations
+clay_coll <- clay_donya %>%
+             group_by(tankID, recording, behavior) %>%
+             summarize(duration_s = mean(duration_s),
+                       behav_count = as.numeric(table(behavior)))
+
+#adding any missing rows (BORIS doesn't export rows for recordings with no
+#behaviors)
+clay_coll <- as.data.frame(clay_coll) %>%
+             complete(tankID, recording, behavior, fill =
+                                                   list(duration_s = NA,
+                                                        behav_count = 0))
+
+
+#creating additional rows that aggregate together all of the behaviors to
+#investigate overall behavioral trends
+
+#aggregating the durations of all behaviors
+clay_dura_all <- aggregate(duration_s ~ tankID + recording,
+                           data = clay_donya, FUN = "mean")
+#aggregating the counts of all behaviors
+clay_count_all <- aggregate(behav_count ~ tankID + recording,
+                            data = clay_coll, FUN = "sum")
+#binding the aggregated count and duration data together
+clay_agg <- full_join(clay_dura_all, clay_count_all, by = c("tankID",
+                                                            "recording"))
+#adding a behavior column identifying these as aggregated data
+clay_agg$behavior <- "all_behaviors"
+#binding the aggregated behaviors back to the full summarized dataset
+clay_coll <- rbind(clay_coll, clay_agg)
+
+
+#creating additional rows that aggregate together just the aggressive behaviors
+#to investigate the general aggressive trends
+clay_dura_angr <- aggregate(duration_s ~ tankID + recording,
+                            data = clay_donya, FUN = "mean")
+#aggregating the counts of all behaviors
+clay_count_angr <- aggregate(behav_count ~ tankID + recording,
+                             data = clay_coll, FUN = "sum")
+#binding the aggregated count and duration data together
+clay_angr <- full_join(clay_dura_angr, clay_count_angr, by = c("tankID",
+                                                               "recording"))
+#adding a behavior column identifying these as aggregated data
+clay_angr$behavior <- "all_aggression"
+#binding the aggregated behaviors back to the full summarized dataset
+clay_coll <- rbind(clay_coll, clay_angr)
+
+
+#using tank IDs to create a column with the treatment condition
+clay_coll$treatment <- clay_coll$tankID %>%
+                      fct_collapse(flux = clayflux,
+                                   stable = claystable,
+                                   clear = clayclear)
+
+
+#writing the final summarized data frame to a .csv file
+write_csv(clay_coll, "OMRclay_BORIS_all.csv")
+```
+
+
+## Summarizing the Dye Data
+
+Summarizing and collapsing the dye data together so that they're in a more
+usable form for analysis.
+
+```{r dye_collapse}
+dye_coll <- dye_all %>%
+             group_by(tankID, recording, behavior) %>%
+             summarize(duration_s = mean(duration_s),
+                       behav_count = as.numeric(table(behavior)))
+
+dye_coll <- as.data.frame(dye_coll) %>%
+             complete(tankID, recording, behavior, fill =
+                                                   list(duration_s = NA,
+                                                        behav_count = 0))
+
+
+dye_dura_all <- aggregate(duration_s ~ tankID + recording,
+                           data = dye_all, FUN = "mean")
+dye_count_all <- aggregate(behav_count ~ tankID + recording,
+                            data = dye_coll, FUN = "sum")
+dye_agg <- full_join(dye_dura_all, dye_count_all, by = c("tankID",
+                                                            "recording"))
+dye_agg$behavior <- "all_behaviors"
+dye_coll <- rbind(dye_coll, dye_agg)
+
+
+dye_dura_angr <- aggregate(duration_s ~ tankID + recording,
+                            data = dye_all, FUN = "mean")
+dye_count_angr <- aggregate(behav_count ~ tankID + recording,
+                             data = dye_coll, FUN = "sum")
+dye_angr <- full_join(dye_dura_angr, dye_count_angr, by = c("tankID",
+                                                               "recording"))
+dye_angr$behavior <- "all_aggression"
+dye_coll <- rbind(dye_coll, dye_angr)
+
+
+dye_coll$treatment <- dye_coll$tankID %>%
+                      fct_collapse(flux = clayflux,
+                                   stable = claystable,
+                                   clear = clayclear)
+
+
+#writing the final summarized data frame to a .csv file
+write_csv(dye_coll, "OMRdye_BORIS_all.csv")
+```
