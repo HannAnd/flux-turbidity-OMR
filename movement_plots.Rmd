@@ -18,11 +18,11 @@ dyedata <- read_csv("6day_dye_movement_data.csv")
 
 #adding identifier for the value in the flux condition during each recording
 claydata$flux_level <- claydata$recording %>%
-                       fct_collapse(high = c("record1", "record3"),
-                                    low = c("record2", "record4"))
+                       fct_collapse(low = c("record1", "record3"),
+                                    high = c("record2", "record4"))
 dyedata$flux_level <- dyedata$recording %>%
-                      fct_collapse(high = c("record1", "record3"),
-                                   low = c("record2", "record4"))
+                      fct_collapse(low = c("record1", "record3"),
+                                   high = c("record2", "record4"))
 
 #relabeling the "control" condition to "clear" condition for clarity
 claydata$treatment <- recode(claydata$treatment, control = "clear")
@@ -77,7 +77,7 @@ hist_arrange <- ggarrange(hist_speed, hist_maxspeed, hist_activ,
 #box plots across all treatments, including all recordings
 box_speed <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = mean_speed, fill = treatment)) +
                 geom_boxplot() +
                 labs(title = "Clay Experiment: Mean Speed",
@@ -89,7 +89,7 @@ box_speed <- claydata %>%
                 theme_classic()
 box_maxspeed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = treatment, y = max_speed, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Max Speed",
@@ -101,7 +101,7 @@ box_maxspeed <- claydata %>%
                  theme_classic()
 box_activ <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = activity_ratio,
                            fill = treatment)) +
                 geom_boxplot() +
@@ -114,7 +114,7 @@ box_activ <- claydata %>%
                 theme_classic()
 box_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = max_acceleration,
                          fill = treatment)) +
               geom_boxplot() +
@@ -128,7 +128,7 @@ box_maxaccel <- claydata %>%
               theme_classic()
 box_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = totaldist_cm, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Distance Traveled",
@@ -144,7 +144,7 @@ box_arrange <- ggarrange(box_speed, box_maxspeed, box_activ,
 #box plots across all treatments, separated by recording
 time_speed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = mean_speed, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Mean Speed",
@@ -157,7 +157,7 @@ time_speed <- claydata %>%
                  theme_classic()
 time_maxspeed <- claydata %>%
                   mutate(treatment = fct_relevel(treatment,
-                                                 "clear", "stable", "flux")) %>%
+                                                 "clear", "flux", "stable")) %>%
                   ggplot(aes(x = recording, y = max_speed, fill = treatment)) +
                   geom_boxplot() +
                   labs(title = "Clay Experiment: Max Speed",
@@ -170,7 +170,7 @@ time_maxspeed <- claydata %>%
                   theme_classic()
 time_activ <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = activity_ratio,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -184,7 +184,7 @@ time_activ <- claydata %>%
                  theme_classic()
 time_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = max_acceleration,
                          fill = treatment)) +
               geom_boxplot() +
@@ -199,7 +199,7 @@ time_maxaccel <- claydata %>%
               theme_classic()
 time_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = totaldist_cm, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Distance Traveled",
@@ -212,12 +212,11 @@ time_dist <- claydata %>%
 time_arrange <- ggarrange(time_speed, time_maxspeed, time_activ,
                          time_maxaccel, time_dist, ncol = 3, nrow = 2)
 
-####the below colors are almost certainly not going to work properly
 #boxplots by what visibility level the flux condition was in during the
 #recording (high or low)
 hilo_speed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = mean_speed, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Mean Speed",
@@ -228,7 +227,7 @@ hilo_speed <- claydata %>%
                  theme_classic()
 hilo_maxspeed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = max_speed, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Max Speed",
@@ -239,7 +238,7 @@ hilo_maxspeed <- claydata %>%
                  theme_classic()
 hilo_activ <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = activity_ratio,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -251,7 +250,7 @@ hilo_activ <- claydata %>%
                  theme_classic()
 hilo_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = max_acceleration,
                          fill = treatment)) +
               geom_boxplot() +
@@ -263,7 +262,7 @@ hilo_maxaccel <- claydata %>%
               theme_classic()
 hilo_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = totaldist_cm, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Distance Traveled",
