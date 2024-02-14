@@ -34,31 +34,42 @@ dyedata$treatment <- recode(dyedata$treatment, control = "clear")
 ```{r clay, echo = FALSE}
 #basic histogram plots to look at distributions combining all treatments and all
 #recordings
-hist_speed <- ggplot(claydata, aes(x = mean_speed)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Mean Speed",
-                             subtitle = "All Speed Values") +
-                        xlab("Speed (cm/s)") +
-                        ylab("Counts") + theme_classic()
-hist_maxspeed <- ggplot(claydata, aes(x = max_speed)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Max Speed",
-                             subtitle = "All Max Speeds") +
-                        xlab("Maximum Speed (cm/s)") +
-                        ylab("Counts") + theme_classic()
-hist_activ <- ggplot(claydata, aes(x = activity_ratio)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Activity",
-                             subtitle = "All Activity Values") +
-                        xlab("Ratio of Frames Spent Active to Total Frames") +
-                        ylab("Counts") + theme_classic()
-hist_maxaccel <- ggplot(claydata, aes(x = max_acceleration)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Max Acceleration",
-                             subtitle = "All Max Acceleration Values") +
-                        xlab("Maximum Acceleration (cm/s^2)") +
-                        ylab("Counts") + theme_classic()
-hist_dist <- ggplot(claydata, aes(x = totaldist_cm)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Distance Traveled",
-                             subtitle = "All Distance Values") +
-                        xlab("Total Distance Traveled (cm)") +
-                        ylab("Counts") + theme_classic()
+hist_speed <- ggplot(claydata, aes(x = mean_speed, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Clay Experiment: Mean Speed",
+                   subtitle = "All Speed Values") +
+              xlab("Speed (cm/s)") + ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
+hist_maxspeed <- ggplot(claydata, aes(x = max_speed, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Clay Experiment: Max Speed",
+                      subtitle = "All Max Speeds") +
+                 xlab("Maximum Speed (cm/s)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_activ <- ggplot(claydata, aes(x = activity_ratio, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Clay Experiment: Activity",
+                   subtitle = "All Activity Values") +
+              xlab("Ratio of Frames Spent Active to Total Frames") +
+              ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
+hist_maxaccel <- ggplot(claydata, aes(x = max_acceleration, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Clay Experiment: Max Acceleration",
+                      subtitle = "All Max Acceleration Values") +
+                 xlab("Maximum Acceleration (cm/s^2)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_dist <- ggplot(claydata, aes(x = totaldist_cm, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Clay Experiment: Distance Traveled",
+                  subtitle = "All Distance Values") +
+             xlab("Total Distance Traveled (cm)") + ylab("Counts") +
+             scale_fill_manual(values = c("blue", "red", "yellow")) +
+             theme_classic()
 hist_arrange <- ggarrange(hist_speed, hist_maxspeed, hist_activ,
                           hist_maxaccel, hist_dist, ncol = 3, nrow = 2)
 
