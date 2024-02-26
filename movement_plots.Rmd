@@ -85,7 +85,7 @@ box_speed <- claydata %>%
                 xlab("Treatments") + ylab("Mean Speed (cm/s)") +
                 scale_fill_manual(values =
                                   c("slategray1", "wheat1", "wheat4")) +
-                #ylim() +
+                ylim(0,15) +
                 theme_classic()
 box_maxspeed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -97,7 +97,7 @@ box_maxspeed <- claydata %>%
                  xlab("Treatments") + ylab("Maximum Speed (cm/s)") +
                  scale_fill_manual(values =
                                    c("slategray1", "wheat1", "wheat4")) +
-                 #ylim() +
+                 ylim(9,37) +
                  theme_classic()
 box_activ <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
@@ -110,7 +110,7 @@ box_activ <- claydata %>%
                 xlab("Treatments") + ylab("Ratio of Seconds Spent Active to Total Time") +
                 scale_fill_manual(values =
                                   c("slategray1", "wheat1", "wheat4")) +
-                #ylim() +
+                ylim(0,1) +
                 theme_classic()
 box_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -124,7 +124,7 @@ box_maxaccel <- claydata %>%
               ylab("Maximum Acceleration (cm/s)") +
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
-              #ylim() +
+              ylim(2.5,13) +
               theme_classic()
 box_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -136,7 +136,7 @@ box_dist <- claydata %>%
               xlab("Treatments") + ylab("Total Distance Traveled (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
-              #ylim() +
+              ylim(2150,36000) +
               theme_classic()
 box_arrange <- ggarrange(box_speed, box_maxspeed, box_activ,
                          box_maxaccel, box_dist, ncol = 3, nrow = 2)
@@ -154,6 +154,7 @@ time_speed <- claydata %>%
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                  color = "gray", linewidth = 1.5) +
+                 ylim(0,15) +
                  theme_classic()
 time_maxspeed <- claydata %>%
                   mutate(treatment = fct_relevel(treatment,
@@ -167,6 +168,7 @@ time_maxspeed <- claydata %>%
                                     c("slategray1", "wheat1", "wheat4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
                   color = "gray", linewidth = 1.5) +
+                  ylim(9,37) +
                   theme_classic()
 time_activ <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -181,6 +183,7 @@ time_activ <- claydata %>%
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                  color = "gray", linewidth = 1.5) +
+                 ylim(0,1) +
                  theme_classic()
 time_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -196,6 +199,7 @@ time_maxaccel <- claydata %>%
                                 c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
               color = "gray", linewidth = 1.5) +
+              ylim(2.5,13) +
               theme_classic()
 time_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -208,6 +212,7 @@ time_dist <- claydata %>%
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
               color = "gray", linewidth = 1.5) +
+              ylim(2150,36000) +
               theme_classic()
 time_arrange <- ggarrange(time_speed, time_maxspeed, time_activ,
                          time_maxaccel, time_dist, ncol = 3, nrow = 2)
@@ -224,6 +229,7 @@ hilo_speed <- claydata %>%
                  xlab("Treatments") + ylab("Mean Speed (cm/s)") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(0,15) +
                  theme_classic()
 hilo_maxspeed <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -235,6 +241,7 @@ hilo_maxspeed <- claydata %>%
                  xlab("Treatments") + ylab("Maximum Speed (cm/s)") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(9,37) +
                  theme_classic()
 hilo_activ <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -247,6 +254,7 @@ hilo_activ <- claydata %>%
                  xlab("Treatments") + ylab("Ratio of Seconds Spent Active to Total Time") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(0,1) +
                  theme_classic()
 hilo_maxaccel <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -259,6 +267,7 @@ hilo_maxaccel <- claydata %>%
               xlab("Treatments") +
               ylab("Maximum Acceleration (cm/s^2)") +
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+              ylim(2.5,13) +
               theme_classic()
 hilo_dist <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -269,6 +278,7 @@ hilo_dist <- claydata %>%
                    subtitle = "All Data by Flux Treatment Visibility") +
               xlab("Treatments") + ylab("Total Distance Traveled (cm)") +
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+              ylim(2150,36000) +
               theme_classic()
 hilo_arrange <- ggarrange(hilo_speed, hilo_maxspeed, hilo_activ,
                          hilo_maxaccel, hilo_dist, ncol = 3, nrow = 2)
@@ -331,7 +341,7 @@ box_speed <- dyedata %>%
                 xlab("Treatments") + ylab("Mean Speed (cm/s)") +
                 scale_fill_manual(values =
                                   c("slategray1", "snow3", "snow4")) +
-                #ylim() +
+                ylim(0,15) +
                 theme_classic()
 box_maxspeed <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -343,7 +353,7 @@ box_maxspeed <- dyedata %>%
                  xlab("Treatments") + ylab("Maximum Speed (cm/s)") +
                  scale_fill_manual(values =
                                    c("slategray1", "snow3", "snow4")) +
-                 #ylim() +
+                 ylim(9,37) +
                  theme_classic()
 box_activ <- dyedata %>%
                 mutate(treatment = fct_relevel(treatment,
@@ -356,7 +366,7 @@ box_activ <- dyedata %>%
                 xlab("Treatments") + ylab("Ratio of Seconds Spent Active to Total Time") +
                 scale_fill_manual(values =
                                   c("slategray1", "snow3", "snow4")) +
-                #ylim() +
+                ylim(0,1) +
                 theme_classic()
 box_maxaccel <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -370,7 +380,7 @@ box_maxaccel <- dyedata %>%
               ylab("Maximum Acceleration (cm/s)") +
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
-              #ylim() +
+              ylim(2.5,13) +
               theme_classic()
 box_dist <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -382,7 +392,7 @@ box_dist <- dyedata %>%
               xlab("Treatments") + ylab("Total Distance Traveled (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
-              #ylim() +
+              ylim(2150,36000) +
               theme_classic()
 box_arrange <- ggarrange(box_speed, box_maxspeed, box_activ,
                          box_maxaccel, box_dist, ncol = 3, nrow = 2)
@@ -400,6 +410,7 @@ time_speed <- dyedata %>%
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                  color = "gray", linewidth = 1.5) +
+                 ylim(0,15) +
                  theme_classic()
 time_maxspeed <- dyedata %>%
                   mutate(treatment = fct_relevel(treatment,
@@ -413,6 +424,7 @@ time_maxspeed <- dyedata %>%
                                     c("slategray1", "snow3", "snow4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
                   color = "gray", linewidth = 1.5) +
+                  ylim(9,37) +
                   theme_classic()
 time_activ <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -427,6 +439,7 @@ time_activ <- dyedata %>%
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                  color = "gray", linewidth = 1.5) +
+                 ylim(0,1) +
                  theme_classic()
 time_maxaccel <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -442,6 +455,7 @@ time_maxaccel <- dyedata %>%
                                 c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
               color = "gray", linewidth = 1.5) +
+              ylim(2.5,13) +
               theme_classic()
 time_dist <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -454,11 +468,11 @@ time_dist <- dyedata %>%
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
               color = "gray", linewidth = 1.5) +
+              ylim(2150,36000) +
               theme_classic()
 time_arrange <- ggarrange(time_speed, time_maxspeed, time_activ,
                          time_maxaccel, time_dist, ncol = 3, nrow = 2)
 
-####the below colors are almost certainly not going to work properly
 #boxplots by what visibility level the flux condition was in during the
 #recording (high or low)
 hilo_speed <- dyedata %>%
@@ -470,6 +484,7 @@ hilo_speed <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Mean Speed (cm/s)") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(0,15) +
                  theme_classic()
 hilo_maxspeed <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -480,6 +495,7 @@ hilo_maxspeed <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Maximum Speed (cm/s)") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(9,37) +
                  theme_classic()
 hilo_activ <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -491,6 +507,7 @@ hilo_activ <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Ratio of Seconds Spent Active to Total Time") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(0,1) +
                  theme_classic()
 hilo_maxaccel <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -503,6 +520,7 @@ hilo_maxaccel <- dyedata %>%
               xlab("Treatments") +
               ylab("Maximum Acceleration (cm/s^2)") +
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+              ylim(2.5,13) +
               theme_classic()
 hilo_dist <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -513,6 +531,7 @@ hilo_dist <- dyedata %>%
                    subtitle = "All Data by Flux Treatment Visibility") +
               xlab("Treatments") + ylab("Total Distance Traveled (cm)") +
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+              ylim(2150,36000) +
               theme_classic()
 hilo_arrange <- ggarrange(hilo_speed, hilo_maxspeed, hilo_activ,
                          hilo_maxaccel, hilo_dist, ncol = 3, nrow = 2)
