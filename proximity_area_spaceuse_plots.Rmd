@@ -20,11 +20,11 @@ dyedata <- read_csv("6day_dye_proximity_data.csv")
 
 #adding identifier for the value in the flux condition during each recording
 claydata$flux_level <- claydata$recording %>%
-                       fct_collapse(high = c("record1", "record3"),
-                                    low = c("record2", "record4"))
+                       fct_collapse(low = c("record1", "record3"),
+                                    high = c("record2", "record4"))
 dyedata$flux_level <- dyedata$recording %>%
-                      fct_collapse(high = c("record1", "record3"),
-                                   low = c("record2", "record4"))
+                      fct_collapse(low = c("record1", "record3"),
+                                   high = c("record2", "record4"))
 
 #relabeling the "control" condition to "clear" condition for clarity
 claydata$treatment <- recode(claydata$treatment, control = "clear")
@@ -37,31 +37,42 @@ dyedata$treatment <- recode(dyedata$treatment, control = "clear")
 ```{r clay, echo = FALSE}
 #basic histogram plots to look at distributions combining all treatments and all
 #recordings
-hist_polarity <- ggplot(claydata, aes(x = polarity)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Polarity",
-                             subtitle = "All Polarity Values") +
-                        xlab("Polarity (1-circular variance)") +
-                        ylab("Counts") + theme_classic()
-hist_neighbor <- ggplot(claydata, aes(x = mean_neighbor)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Mean Neighbor Distances",
-                             subtitle = "All Mean Neighbor Distances") +
-                        xlab("Mean Neighbor Distance (cm)") +
-                        ylab("Counts") + theme_classic()
-hist_shoal <- ggplot(claydata, aes(x = shoal_area)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Shoal Area",
-                             subtitle = "All Shoal Area Values") +
-                        xlab("Area of Shoal (cm^2)") +
-                        ylab("Counts") + theme_classic()
-hist_wall <- ggplot(claydata, aes(x = wall_proximity)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Wall Proximity",
-                             subtitle = "All Proximity Values") +
-                        xlab("Mean Proximity of Fish to Nearest Wall (cm)") +
-                        ylab("Counts") + theme_classic()
-hist_space <- ggplot(claydata, aes(x = space_use)) + geom_histogram() +
-                        labs(title = "Clay Experiment: Space Use",
-                             subtitle = "All Space Use Values") +
-                        xlab("Proportion of Space Use") +
-                        ylab("Counts") + theme_classic()
+hist_polarity <- ggplot(claydata, aes(x = polarity, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Clay Experiment: Polarity",
+                      subtitle = "All Polarity Values") +
+                 xlab("Polarity (1-circular variance)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_neighbor <- ggplot(claydata, aes(x = mean_neighbor, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Clay Experiment: Mean Neighbor Distances",
+                      subtitle = "All Mean Neighbor Distances") +
+                 xlab("Mean Neighbor Distance (cm)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_shoal <- ggplot(claydata, aes(x = shoal_area, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Clay Experiment: Shoal Area",
+                   subtitle = "All Shoal Area Values") +
+              xlab("Area of Shoal (cm^2)") + ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
+hist_wall <- ggplot(claydata, aes(x = wall_proximity, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Clay Experiment: Wall Proximity",
+                  subtitle = "All Proximity Values") +
+             xlab("Mean Proximity of Fish to Nearest Wall (cm)") +
+             ylab("Counts") +
+             scale_fill_manual(values = c("blue", "red", "yellow")) +
+             theme_classic()
+hist_space <- ggplot(claydata, aes(x = space_use, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Clay Experiment: Space Use",
+              subtitle = "All Space Use Values") +
+              xlab("Proportion of Space Use") + ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
 hist_arrange <- ggarrange(hist_polarity, hist_neighbor, hist_shoal,
                           hist_wall, hist_space, ncol = 3, nrow = 2)
 
@@ -77,11 +88,11 @@ box_polarity <- claydata %>%
                 xlab("Treatments") + ylab("Polarity (1-circular variance)") +
                 scale_fill_manual(values =
                                   c("slategray1", "wheat1", "wheat4")) +
-                #ylim() +
+                ylim(0,1) +
                 theme_classic()
 box_shoalarea <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = treatment, y = shoal_area, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Shoal Area",
@@ -89,11 +100,11 @@ box_shoalarea <- claydata %>%
                  xlab("Treatments") + ylab("Shoal Area (cm^2)") +
                  scale_fill_manual(values =
                                    c("slategray1", "wheat1", "wheat4")) +
-                 #ylim() +
+                 ylim(9,75) +
                  theme_classic()
 box_neighbor <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = mean_neighbor,
                            fill = treatment)) +
                 geom_boxplot() +
@@ -102,11 +113,11 @@ box_neighbor <- claydata %>%
                 xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
                 scale_fill_manual(values =
                                   c("slategray1", "wheat1", "wheat4")) +
-                #ylim() +
+                ylim(6,14) +
                 theme_classic()
 box_walls <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -116,11 +127,11 @@ box_walls <- claydata %>%
               ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
-              #ylim() +
+              ylim(0,5) +
               theme_classic()
 box_space <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Space Use",
@@ -128,7 +139,7 @@ box_space <- claydata %>%
               xlab("Treatments") + ylab("Proportion of Space Used") +
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
-              #ylim() +
+              ylim(0,1) +
               theme_classic()
 box_arrange <- ggarrange(box_polarity, box_shoalarea, box_neighbor,
                          box_walls, box_space, ncol = 3, nrow = 2)
@@ -136,7 +147,7 @@ box_arrange <- ggarrange(box_polarity, box_shoalarea, box_neighbor,
 #box plots across all treatments, separated by recording
 time_polarity <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = polarity, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Polarity",
@@ -146,10 +157,11 @@ time_polarity <- claydata %>%
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                            color = "gray", linewidth = 1.5) +
+                 ylim(0,1) +
                  theme_classic()
 time_shoalarea <- claydata %>%
                   mutate(treatment = fct_relevel(treatment,
-                                                 "clear", "stable", "flux")) %>%
+                                                 "clear", "flux", "stable")) %>%
                   ggplot(aes(x = recording, y = shoal_area, fill = treatment)) +
                   geom_boxplot() +
                   labs(title = "Clay Experiment: Mean Shoal Area",
@@ -159,10 +171,11 @@ time_shoalarea <- claydata %>%
                                     c("slategray1", "wheat1", "wheat4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
                              color = "gray", linewidth = 1.5) +
+                  ylim(9,75) +
                   theme_classic()
 time_neighbor <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = mean_neighbor,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -173,10 +186,11 @@ time_neighbor <- claydata %>%
                                    c("slategray1", "wheat1", "wheat4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                             color = "gray", linewidth = 1.5) +
+                 ylim(6,14) +
                  theme_classic()
 time_walls <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -188,10 +202,11 @@ time_walls <- claydata %>%
                                 c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
                          color = "gray", linewidth = 1.5) +
+              ylim(0,5) +
               theme_classic()
 time_space <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Space Use",
@@ -200,16 +215,16 @@ time_space <- claydata %>%
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
                          color = "gray", linewidth = 1.5) +
+              ylim(0,1) +
               theme_classic()
 time_arrange <- ggarrange(time_polarity, time_shoalarea, time_neighbor,
                          time_walls, time_space, ncol = 3, nrow = 2)
 
-####the below colors are almost certainly not going to work properly
 #boxplots by what visibility level the flux condition was in during the
 #recording (high or low)
 hilo_polarity <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = polarity, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Polarity",
@@ -217,10 +232,11 @@ hilo_polarity <- claydata %>%
                  xlab("Treatments") + ylab("Polarity (1-circular variance)") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(0,1) +
                  theme_classic()
 hilo_shoalarea <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = shoal_area, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Clay Experiment: Shoal Area",
@@ -228,10 +244,11 @@ hilo_shoalarea <- claydata %>%
                  xlab("Treatments") + ylab("Shoal Area (cm^2)") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(9,75) +
                  theme_classic()
 hilo_neighbor <- claydata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = mean_neighbor,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -240,10 +257,11 @@ hilo_neighbor <- claydata %>%
                  xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
                  scale_fill_manual(values = c("slategray1", "wheat1",
                                               "wheat4")) +
+                 ylim(6,14) +
                  theme_classic()
 hilo_walls <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -252,16 +270,18 @@ hilo_walls <- claydata %>%
               xlab("Treatments") +
               ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+              ylim(0,5) +
               theme_classic()
 hilo_space <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Clay Experiment: Space Use",
                    subtitle = "All Data by Flux Treatment Visibility") +
               xlab("Treatments") + ylab("Proportion of Space Use") +
               scale_fill_manual(values = c("slategray1", "wheat1", "wheat4")) +
+              ylim(0,1) +
               theme_classic()
 hilo_arrange <- ggarrange(hilo_polarity, hilo_shoalarea, hilo_neighbor,
                          hilo_walls, hilo_space, ncol = 3, nrow = 2)
@@ -273,31 +293,42 @@ hilo_arrange <- ggarrange(hilo_polarity, hilo_shoalarea, hilo_neighbor,
 ```{r dye, echo = FALSE}
 #basic histogram plots to look at distributions combining all treatments and all
 #recordings
-hist_polarity <- ggplot(dyedata, aes(x = polarity)) + geom_histogram() +
-                        labs(title = "Dye Experiment: Polarity",
-                             subtitle = "All Polarity Values") +
-                        xlab("Polarity (1-circular variance)") +
-                        ylab("Counts") + theme_classic()
-hist_neighbor <- ggplot(dyedata, aes(x = mean_neighbor)) + geom_histogram() +
-                        labs(title = "Dye Experiment: Mean Neighbor Distances",
-                             subtitle = "All Mean Neighbor Distances") +
-                        xlab("Mean Neighbor Distance (cm)") +
-                        ylab("Counts") + theme_classic()
-hist_shoal <- ggplot(dyedata, aes(x = shoal_area)) + geom_histogram() +
-                        labs(title = "Dye Experiment: Shoal Area",
-                             subtitle = "All Shoal Area Values") +
-                        xlab("Area of Shoal (cm^2)") +
-                        ylab("Counts") + theme_classic()
-hist_wall <- ggplot(dyedata, aes(x = wall_proximity)) + geom_histogram() +
-                        labs(title = "Dye Experiment: Wall Proximity",
-                             subtitle = "All Proximity Values") +
-                        xlab("Mean Proximity of Fish to Nearest Wall (cm)") +
-                        ylab("Counts") + theme_classic()
-hist_space <- ggplot(dyedata, aes(x = space_use)) + geom_histogram() +
-                        labs(title = "Dye Experiment: Space Use",
-                             subtitle = "All Space Use Values") +
-                        xlab("Proportion of Space Use") +
-                        ylab("Counts") + theme_classic()
+hist_polarity <- ggplot(dyedata, aes(x = polarity, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Dye Experiment: Polarity",
+                      subtitle = "All Polarity Values") +
+                 xlab("Polarity (1-circular variance)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_neighbor <- ggplot(dyedata, aes(x = mean_neighbor, fill = treatment)) +
+                 geom_histogram(position = "identity", alpha = 0.5) +
+                 labs(title = "Dye Experiment: Mean Neighbor Distances",
+                      subtitle = "All Mean Neighbor Distances") +
+                 xlab("Mean Neighbor Distance (cm)") + ylab("Counts") +
+                 scale_fill_manual(values = c("blue", "red", "yellow")) +
+                 theme_classic()
+hist_shoal <- ggplot(dyedata, aes(x = shoal_area, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Dye Experiment: Shoal Area",
+                   subtitle = "All Shoal Area Values") +
+              xlab("Area of Shoal (cm^2)") + ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
+hist_wall <- ggplot(dyedata, aes(x = wall_proximity, fill = treatment)) +
+             geom_histogram(position = "identity", alpha = 0.5) +
+             labs(title = "Dye Experiment: Wall Proximity",
+                  subtitle = "All Proximity Values") +
+             xlab("Mean Proximity of Fish to Nearest Wall (cm)") +
+             ylab("Counts") +
+             scale_fill_manual(values = c("blue", "red", "yellow")) +
+             theme_classic()
+hist_space <- ggplot(dyedata, aes(x = space_use, fill = treatment)) +
+              geom_histogram(position = "identity", alpha = 0.5) +
+              labs(title = "Dye Experiment: Space Use",
+                   subtitle = "All Space Use Values") +
+              xlab("Proportion of Space Use") + ylab("Counts") +
+              scale_fill_manual(values = c("blue", "red", "yellow")) +
+              theme_classic()
 hist_arrange <- ggarrange(hist_polarity, hist_neighbor, hist_shoal,
                           hist_wall, hist_space, ncol = 3, nrow = 2)
 
@@ -313,7 +344,7 @@ box_polarity <- dyedata %>%
                 xlab("Treatments") + ylab("Polarity (1-circular variance)") +
                 scale_fill_manual(values =
                                   c("slategray1", "snow3", "snow4")) +
-                #ylim() +
+                ylim(0,1) +
                 theme_classic()
 box_shoalarea <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -325,7 +356,7 @@ box_shoalarea <- dyedata %>%
                  xlab("Treatments") + ylab("Shoal Area (cm^2)") +
                  scale_fill_manual(values =
                                    c("slategray1", "snow3", "snow4")) +
-                 #ylim() +
+                 ylim(9,75) +
                  theme_classic()
 box_neighbor <- dyedata %>%
                 mutate(treatment = fct_relevel(treatment,
@@ -338,7 +369,7 @@ box_neighbor <- dyedata %>%
                 xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
                 scale_fill_manual(values =
                                   c("slategray1", "snow3", "snow4")) +
-                #ylim() +
+                ylim(6,14) +
                 theme_classic()
 box_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -352,7 +383,7 @@ box_walls <- dyedata %>%
               ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
-              #ylim() +
+              ylim(0,5) +
               theme_classic()
 box_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -364,7 +395,7 @@ box_space <- dyedata %>%
               xlab("Treatments") + ylab("Proportion of Space Used") +
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
-              #ylim() +
+              ylim(0,1) +
               theme_classic()
 box_arrange <- ggarrange(box_polarity, box_shoalarea, box_neighbor,
                          box_walls, box_space, ncol = 3, nrow = 2)
@@ -382,6 +413,7 @@ time_polarity <- dyedata %>%
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                             color = "gray", linewidth = 1.5) +
+                 ylim(0,1) +
                  theme_classic()
 time_shoalarea <- dyedata %>%
                   mutate(treatment = fct_relevel(treatment,
@@ -395,6 +427,7 @@ time_shoalarea <- dyedata %>%
                                     c("slategray1", "snow3", "snow4")) +
                   geom_vline(xintercept = 2.5, linetype = "dashed",
                              color = "gray", linewidth = 1.5) +
+                  ylim(9,75) +
                   theme_classic()
 time_neighbor <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -409,6 +442,7 @@ time_neighbor <- dyedata %>%
                                    c("slategray1", "snow3", "snow4")) +
                  geom_vline(xintercept = 2.5, linetype = "dashed",
                             color = "gray", linewidth = 1.5) +
+                 ylim(6,14) +
                  theme_classic()
 time_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -424,6 +458,7 @@ time_walls <- dyedata %>%
                                 c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
                          color = "gray", linewidth = 1.5) +
+              ylim(0,5) +
               theme_classic()
 time_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -436,11 +471,11 @@ time_space <- dyedata %>%
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
               geom_vline(xintercept = 2.5, linetype = "dashed",
                          color = "gray", linewidth = 1.5) +
+              ylim(0,1) +
               theme_classic()
 time_arrange <- ggarrange(time_polarity, time_shoalarea, time_neighbor,
                          time_walls, time_space, ncol = 3, nrow = 2)
 
-####the below colors are almost certainly not going to work properly
 #boxplots by what visibility level the flux condition was in during the
 #recording (high or low)
 hilo_polarity <- dyedata %>%
@@ -452,6 +487,7 @@ hilo_polarity <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Polarity (1-circular variance)") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(0,1) +
                  theme_classic()
 hilo_shoalarea <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -462,6 +498,7 @@ hilo_shoalarea <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Shoal Area (cm^2)") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(9,75) +
                  theme_classic()
 hilo_neighbor <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
@@ -473,6 +510,7 @@ hilo_neighbor <- dyedata %>%
                       subtitle = "All Data by Flux Treatment Visibility") +
                  xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
                  scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+                 ylim(6,14) +
                  theme_classic()
 hilo_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -485,6 +523,7 @@ hilo_walls <- dyedata %>%
               xlab("Treatments") +
               ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+              ylim(0,5) +
               theme_classic()
 hilo_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
@@ -495,6 +534,7 @@ hilo_space <- dyedata %>%
                    subtitle = "All Data by Flux Treatment Visibility") +
               xlab("Treatments") + ylab("Proportion of Space Use") +
               scale_fill_manual(values = c("slategray1", "snow3", "snow4")) +
+              ylim(0,1) +
               theme_classic()
 hilo_arrange <- ggarrange(hilo_polarity, hilo_shoalarea, hilo_neighbor,
                          hilo_walls, hilo_space, ncol = 3, nrow = 2)
