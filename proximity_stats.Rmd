@@ -1,0 +1,95 @@
+---
+title: "Statistical Analyses of TRex Proximity Data"
+author: "Hannah Anderson"
+date: "2024-02-26"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Setup
+
+```{r setup, include=FALSE}
+setwd("C://Users/hande/Documents/R/fluctuating-turbidity2")
+library(tidyverse)
+library(glmmTMB)
+library(emmeans)
+library(car)
+library(DHARMa)
+
+#importing the data
+clay_data <- read_csv("6day_clay_proximity_data.csv")
+dye_data <- read_csv("6day_dye_proximity_data.csv")
+```
+
+
+## Analyses for Clay Experiment
+
+```{r clay}
+#basic models
+
+#mean shoal area
+m_shoal <- glmmTMB(shoal_area ~ treatment + (1|tankID), data = clay_data,
+                   family = gaussian())
+#mean neighbor distance
+m_neigh <- update(m_shoal, mean_neighbor ~ .)
+#mean proximity to wall
+m_wall <- update(m_shoal, wall_proximity ~ .)
+#polarity
+polar <- update(m_shoal, polarity ~ ., family = ordbeta(link = "logit"))
+#ratio of space use
+space <- update(polar, space_use ~ .)
+
+#checking model assumptions
+plot(simulateResiduals(fittedModel = m_shoal))
+plot(simulateResiduals(fittedModel = m_neigh))
+plot(simulateResiduals(fittedModel = m_wall))
+plot(simulateResiduals(fittedModel = polar)) #assumptions not met
+plot(simulateResiduals(fittedModel = space))
+
+#analyzing the results
+Anova(m_shoal)
+Anova(m_neigh)
+Anova(m_wall)
+#Anova(polar)
+Anova(space)
+
+#post hoc pairwise comparison of the significant result
+m_wall %>% emmeans(pairwise ~ treatment)
+```
+
+
+## Analyses for the Dye Experiment
+
+```{r clay}
+#basic models
+
+#mean shoal area
+m_shoal <- glmmTMB(shoal_area ~ treatment + (1|tankID), data = dye_data,
+                   family = gaussian())
+#mean neighbor distance
+m_neigh <- update(m_shoal, mean_neighbor ~ .)
+#mean proximity to wall
+m_wall <- update(m_shoal, wall_proximity ~ .)
+#polarity
+polar <- update(m_shoal, polarity ~ ., family = ordbeta(link = "logit"))
+#ratio of space use
+space <- update(polar, space_use ~ .)
+
+#checking model assumptions
+plot(simulateResiduals(fittedModel = m_shoal))
+plot(simulateResiduals(fittedModel = m_neigh))
+plot(simulateResiduals(fittedModel = m_wall))
+plot(simulateResiduals(fittedModel = polar))
+plot(simulateResiduals(fittedModel = space))
+
+#analyzing the results
+Anova(m_shoal)
+Anova(m_neigh)
+Anova(m_wall)
+Anova(polar)
+Anova(space)
+
+#post hoc pairwise comparison of the significant result
+m_shoal %>% emmeans(pairwise ~ treatment)
+```
