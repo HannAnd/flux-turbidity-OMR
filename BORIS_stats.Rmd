@@ -1,0 +1,45 @@
+---
+title: "Statistical Analyses of BORIS Social Data"
+author: "Hannah Anderson"
+date: "2024-02-26"
+output: pdf_document
+---
+
+
+## Setup
+
+```{r setup, include=FALSE}
+setwd("C://Users/hande/Documents/R/fluctuating-turbidity2")
+library(tidyverse)
+library(glmmTMB)
+library(emmeans)
+library(car)
+library(DHARMa)
+
+#importing the data
+clay_data <- read_csv("6day_clay_BORIS_all.csv")
+#dye_data <- read_csv("6day_dye_BORIS_all.csv")
+```
+
+
+## Analyses for Clay Experiment
+
+```{r clay}
+#basic models
+
+#number of chases
+
+#number of aggressive contacts
+
+#number of lateral displays
+
+#number of follows
+
+
+
+#mean duration of chases
+
+#mean duration of lateral displays
+
+#mean duration of follos
+```
