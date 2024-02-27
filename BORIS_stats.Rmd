@@ -3,6 +3,8 @@ title: "Statistical Analyses of BORIS Social Data"
 author: "Hannah Anderson"
 date: "2024-02-26"
 output: pdf_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -19,6 +21,18 @@ library(DHARMa)
 #importing the data
 clay_data <- read_csv("6day_clay_BORIS_all.csv")
 #dye_data <- read_csv("6day_dye_BORIS_all.csv")
+
+#a list of the scored behaviors to be used in filtering the data by behavior
+behavs <- c("chase", "agg_contact", "lat_display", "follow", "all_aggression",
+            "all_behaviors")
+
+#subsetting the data by behavior
+clay_behav <- list()
+#dye_behav <- list()
+for (i in 1:(length(behavs))){
+  clay_behav[[i]] <- clay_data %>% filter(behavior == behavs[i])
+  #dye_behav[[i]] <- dye_data %>% filter(behavior == behavs[i])
+}
 ```
 
 
@@ -28,18 +42,98 @@ clay_data <- read_csv("6day_clay_BORIS_all.csv")
 #basic models
 
 #number of chases
-
+c_chase <- glmmTMB(behav_count ~ treatment + (1|tankID), data = clay_behav[[1]],
+                   family = poisson())
 #number of aggressive contacts
-
+c_cont <- update(c_chase, . ~ ., data = clay_behav[[2]])
 #number of lateral displays
-
+c_later <- update(c_chase, . ~ ., data = clay_behav[[3]])
 #number of follows
+c_foll <- update(c_chase, . ~ ., data = clay_behav[[4]])
+#total number of aggressive behaviors
+c_angr <- update(c_chase, . ~ ., data = clay_behav[[5]])
+#total number of behaviors
+c_all <- update(c_chase, . ~ ., data = clay_behav[[6]])
 
+
+#checking the model assumptions
+plot(simulateResiduals(fittedModel = c_chase))
+plot(simulateResiduals(fittedModel = c_cont)) #assumptions not met
+plot(simulateResiduals(fittedModel = c_later))
+plot(simulateResiduals(fittedModel = c_foll))
+plot(simulateResiduals(fittedModel = c_angr)) #assumptions not met
+plot(simulateResiduals(fittedModel = c_all)) #assumptions not met
+
+#transforming the data to meet model assumptions
+trans_cont <- as.data.frame(clay_behav[[2]])
+trans_cont$behav_count <- (trans_cont$behav_count)^2
+trans_angr <- as.data.frame(clay_behav[[5]])
+trans_angr$behav_count <- (trans_angr$behav_count)^2
+trans_all <- as.data.frame(clay_behav[[6]])
+trans_all$behav_count <- (trans_all$behav_count)^2
+
+#the transformed models
+c_cont_trans <- update(c_cont, . ~ ., data = trans_cont, family = gaussian())
+c_angr_trans <- update(c_angr, . ~ ., data = trans_angr, family = gaussian())
+c_all_trans <- update(c_all, . ~ ., data = trans_all, family = gaussian())
+
+#checking the transformed model assumptions
+plot(simulateResiduals(fittedModel = c_cont_trans)) #assumptions not met
+plot(simulateResiduals(fittedModel = c_angr_trans)) #assumptions not met
+plot(simulateResiduals(fittedModel = c_all_trans)) #assumptions not met
+
+#analyzing the results
+Anova(c_chase)
+#Anova(c_cont)
+Anova(c_later)
+Anova(c_foll)
+#Anova(c_angr)
+#Anova(c_all)
+
+#post hoc pairwise comparison of the significant result
+c_chase %>% emmeans(pairwise ~ treatment)
 
 
 #mean duration of chases
-
+d_chase <- glmmTMB(duration_s ~ treatment + (1|tankID), data = clay_behav[[1]],
+                   family = gaussian())
 #mean duration of lateral displays
+d_later <- update(d_chase, . ~ ., data = clay_behav[[3]])
+#mean duration of follows
+d_foll <- update(d_chase, . ~ ., data = clay_behav[[4]])
+#mean duration of all aggressive behaviors
+d_angr <- update(d_chase, . ~ ., data = clay_behav[[5]])
+#mean duration of all behaviors except aggressive contact, which was instant
+d_all <- update(d_chase, . ~ ., data = clay_behav[[6]])
 
-#mean duration of follos
+#checking the model assumptions
+plot(simulateResiduals(fittedModel = d_chase)) #assumptions not met
+plot(simulateResiduals(fittedModel = d_later)) #assumptions not met
+plot(simulateResiduals(fittedModel = d_foll))
+plot(simulateResiduals(fittedModel = d_angr)) #assumptions not met
+plot(simulateResiduals(fittedModel = d_all))
+
+#transforming the data to meet model assumptions
+trans_chase <- as.data.frame(clay_behav[[1]])
+trans_chase$duration_s <- log(trans_chase$duration_s+1)
+trans_later <- as.data.frame(clay_behav[[3]])
+trans_later$duration_s <- log(trans_later$duration_s+1)
+trans_angr$duration_s <- log(trans_angr$duration_s+1) ###good, don't change!
+
+#the transformed models
+d_chase_trans <- update(d_chase, . ~ ., data = trans_chase, family = gaussian())
+d_later_trans <- update(d_later, . ~ ., data = trans_later, family = gaussian())
+d_angr_trans <- update(d_angr, . ~ ., data = trans_angr, family = gaussian())
+
+#checking the transformed model assumptions
+plot(simulateResiduals(fittedModel = d_chase_trans)) #assumptions not met
+plot(simulateResiduals(fittedModel = d_later_trans)) #assumptions not met
+plot(simulateResiduals(fittedModel = d_angr_trans))
+
+#analyzing the results
+#Anova(d_chase)
+#Anova(d_later)
+Anova(c_foll)
+Anova(d_angr_trans)
+Anova(d_all)
 ```
