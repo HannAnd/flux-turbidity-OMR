@@ -80,7 +80,7 @@ hist_arrange <- ggarrange(hist_polarity, hist_neighbor, hist_shoal,
 #box plots across all treatments, including all recordings
 box_polarity <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = polarity, fill = treatment)) +
                 geom_boxplot() +
                 labs(title = "Clay Experiment: Polarity",
@@ -336,7 +336,7 @@ hist_arrange <- ggarrange(hist_polarity, hist_neighbor, hist_shoal,
 #box plots across all treatments, including all recordings
 box_polarity <- dyedata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = polarity, fill = treatment)) +
                 geom_boxplot() +
                 labs(title = "Dye Experiment: Polarity",
@@ -348,7 +348,7 @@ box_polarity <- dyedata %>%
                 theme_classic()
 box_shoalarea <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = treatment, y = shoal_area, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Dye Experiment: Shoal Area",
@@ -360,7 +360,7 @@ box_shoalarea <- dyedata %>%
                  theme_classic()
 box_neighbor <- dyedata %>%
                 mutate(treatment = fct_relevel(treatment,
-                                               "clear", "stable", "flux")) %>%
+                                               "clear", "flux", "stable")) %>%
                 ggplot(aes(x = treatment, y = mean_neighbor,
                            fill = treatment)) +
                 geom_boxplot() +
@@ -373,7 +373,7 @@ box_neighbor <- dyedata %>%
                 theme_classic()
 box_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -387,7 +387,7 @@ box_walls <- dyedata %>%
               theme_classic()
 box_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = treatment, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Dye Experiment: Space Use",
@@ -403,7 +403,7 @@ box_arrange <- ggarrange(box_polarity, box_shoalarea, box_neighbor,
 #box plots across all treatments, separated by recording
 time_polarity <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = polarity, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Dye Experiment: Polarity",
@@ -417,7 +417,7 @@ time_polarity <- dyedata %>%
                  theme_classic()
 time_shoalarea <- dyedata %>%
                   mutate(treatment = fct_relevel(treatment,
-                                                 "clear", "stable", "flux")) %>%
+                                                 "clear", "flux", "stable")) %>%
                   ggplot(aes(x = recording, y = shoal_area, fill = treatment)) +
                   geom_boxplot() +
                   labs(title = "Dye Experiment: Mean Shoal Area",
@@ -431,7 +431,7 @@ time_shoalarea <- dyedata %>%
                   theme_classic()
 time_neighbor <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = recording, y = mean_neighbor,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -446,7 +446,7 @@ time_neighbor <- dyedata %>%
                  theme_classic()
 time_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -462,7 +462,7 @@ time_walls <- dyedata %>%
               theme_classic()
 time_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = recording, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Dye Experiment: Space Use",
@@ -480,7 +480,7 @@ time_arrange <- ggarrange(time_polarity, time_shoalarea, time_neighbor,
 #recording (high or low)
 hilo_polarity <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = polarity, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Dye Experiment: Polarity",
@@ -491,7 +491,7 @@ hilo_polarity <- dyedata %>%
                  theme_classic()
 hilo_shoalarea <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = shoal_area, fill = treatment)) +
                  geom_boxplot() +
                  labs(title = "Dye Experiment: Shoal Area",
@@ -502,7 +502,7 @@ hilo_shoalarea <- dyedata %>%
                  theme_classic()
 hilo_neighbor <- dyedata %>%
                  mutate(treatment = fct_relevel(treatment,
-                                                "clear", "stable", "flux")) %>%
+                                                "clear", "flux", "stable")) %>%
                  ggplot(aes(x = flux_level, y = mean_neighbor,
                             fill = treatment)) +
                  geom_boxplot() +
@@ -514,7 +514,7 @@ hilo_neighbor <- dyedata %>%
                  theme_classic()
 hilo_walls <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = wall_proximity,
                          fill = treatment)) +
               geom_boxplot() +
@@ -527,7 +527,7 @@ hilo_walls <- dyedata %>%
               theme_classic()
 hilo_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
-                                             "clear", "stable", "flux")) %>%
+                                             "clear", "flux", "stable")) %>%
               ggplot(aes(x = flux_level, y = space_use, fill = treatment)) +
               geom_boxplot() +
               labs(title = "Dye Experiment: Space Use",
