@@ -7,6 +7,22 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Introduction
+
+WIP: We ran two models on each of our measures. The first is a model
+investigating the effects across all three treatments specifically during
+recording 3 (the "direct comparison" models). This recording occurs when both
+the stable and flux treatments are at the same visibility level but also after
+two previous fluctuations had occurred during the flux condition (during the
+previous day). These models include an interaction effect between the experiment
+(clay or dye) and treatment as well as a random effect of tank ID.
+
+The second set of models includes all of the recordings from all experiments and
+includes an interaction between the experiment (clay or dye), treatment and the
+visibility of the flux condition/time of day as well as a random effect of 
+tank ID.
+
+
 ## Setup
 
 ```{r setup, include=FALSE}
@@ -20,76 +36,83 @@ library(DHARMa)
 #importing the data
 clay_data <- read_csv("6day_clay_proximity_data.csv")
 dye_data <- read_csv("6day_dye_proximity_data.csv")
+#adding a column to identify the experiment
+clay_data$experiment <- "clay"
+dye_data$experiment <- "dye"
+#combining the clay and dye data together into a single data frame
+comp_data <- rbind(clay_data, dye_data)
 ```
 
 
-## Analyses for Clay Experiment
+## Direct Comparison Models
 
-```{r clay}
-#basic models
+```{r direct}
+#sub-setting the data to only include recording 3
+direct_data <- comp_data %>%
+               filter(recording == "record3")
 
 #mean shoal area
-m_shoal <- glmmTMB(shoal_area ~ treatment + (1|tankID), data = clay_data,
-                   family = gaussian())
+d_shoal <- glmmTMB(shoal_area ~ treatment*experiment + (1|tankID),
+                   data = direct_data, gaussian())
+#mean neighbor distance
+d_neigh <- update(d_shoal, mean_neighbor ~ .)
+#mean proximity to wall
+d_wall <- update(d_shoal, wall_proximity ~ .)
+#polarity
+d_polar <- update(d_shoal, polarity ~ .)
+#ratio of space use
+d_space <- update(d_shoal, space_use ~ ., family = beta_family(link = "logit"))
+
+#checking the model assumptions
+plot(simulateResiduals(fittedModel = d_shoal))
+plot(simulateResiduals(fittedModel = d_neigh))
+plot(simulateResiduals(fittedModel = d_wall))
+plot(simulateResiduals(fittedModel = d_polar))
+plot(simulateResiduals(fittedModel = d_space)) #assumptions borderline
+
+#analyzing the results
+Anova(d_shoal)
+Anova(d_neigh)
+Anova(d_wall)
+Anova(d_polar)
+#Anova(d_space)
+```
+
+
+## Full Comparison Models
+
+```{r full}
+#adding a column to define whether the recording is in the morning (when the
+#flux visibility is the same as the stable visibility) or in the afternoon (when
+#flux visibility is better than the stable visibility)
+comp_data$time <- comp_data$recording
+comp_data$time <- comp_data$time %>%
+                  fct_collapse(morning = c("record1", "record3"),
+                               afternoon = c("record2", "record4"))
+
+#mean shoal area
+m_shoal <- glmmTMB(shoal_area ~ treatment*experiment*time + (1|tankID),
+                   data = comp_data, family = gaussian())
 #mean neighbor distance
 m_neigh <- update(m_shoal, mean_neighbor ~ .)
 #mean proximity to wall
 m_wall <- update(m_shoal, wall_proximity ~ .)
 #polarity
-polar <- update(m_shoal, polarity ~ ., family = ordbeta(link = "logit"))
+polar <- update(m_shoal, polarity ~ ., family = beta_family(link = "logit"))
 #ratio of space use
 space <- update(polar, space_use ~ .)
 
 #checking model assumptions
-plot(simulateResiduals(fittedModel = m_shoal))
+plot(simulateResiduals(fittedModel = m_shoal)) #assumptions borderline
 plot(simulateResiduals(fittedModel = m_neigh))
 plot(simulateResiduals(fittedModel = m_wall))
 plot(simulateResiduals(fittedModel = polar)) #assumptions not met
-plot(simulateResiduals(fittedModel = space))
+plot(simulateResiduals(fittedModel = space)) #assumptions not met
 
 #analyzing the results
 Anova(m_shoal)
 Anova(m_neigh)
 Anova(m_wall)
 #Anova(polar)
-Anova(space)
-
-#post hoc pairwise comparison of the significant result
-m_wall %>% emmeans(pairwise ~ treatment)
-```
-
-
-## Analyses for the Dye Experiment
-
-```{r clay}
-#basic models
-
-#mean shoal area
-m_shoal <- glmmTMB(shoal_area ~ treatment + (1|tankID), data = dye_data,
-                   family = gaussian())
-#mean neighbor distance
-m_neigh <- update(m_shoal, mean_neighbor ~ .)
-#mean proximity to wall
-m_wall <- update(m_shoal, wall_proximity ~ .)
-#polarity
-polar <- update(m_shoal, polarity ~ ., family = ordbeta(link = "logit"))
-#ratio of space use
-space <- update(polar, space_use ~ .)
-
-#checking model assumptions
-plot(simulateResiduals(fittedModel = m_shoal))
-plot(simulateResiduals(fittedModel = m_neigh))
-plot(simulateResiduals(fittedModel = m_wall))
-plot(simulateResiduals(fittedModel = polar))
-plot(simulateResiduals(fittedModel = space))
-
-#analyzing the results
-Anova(m_shoal)
-Anova(m_neigh)
-Anova(m_wall)
-Anova(polar)
-Anova(space)
-
-#post hoc pairwise comparison of the significant result
-m_shoal %>% emmeans(pairwise ~ treatment)
+#Anova(space)
 ```
