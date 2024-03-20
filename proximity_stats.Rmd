@@ -39,6 +39,15 @@ dye_data <- read_csv("6day_dye_proximity_data.csv")
 #adding a column to identify the experiment
 clay_data$experiment <- "clay"
 dye_data$experiment <- "dye"
+
+#changing tank IDs to shoal IDs to ensure IDs are different between experiments
+clay_data <- clay_data %>%
+             rename_at("tankID", ~"shoalID")
+clay_data$shoalID <- gsub("tank", "clay", clay_data$shoalID)
+dye_data <- dye_data %>%
+            rename_at("tankID", ~"shoalID")
+dye_data$shoalID <- gsub("tank", "dye", dye_data$shoalID)
+
 #combining the clay and dye data together into a single data frame
 comp_data <- rbind(clay_data, dye_data)
 ```
@@ -52,23 +61,34 @@ direct_data <- comp_data %>%
                filter(recording == "record3")
 
 #mean shoal area
-d_shoal <- glmmTMB(shoal_area ~ treatment*experiment + (1|tankID),
+d_shoal <- glmmTMB(shoal_area ~ treatment*experiment,
                    data = direct_data, gaussian())
 #mean neighbor distance
+##model convergence
 d_neigh <- update(d_shoal, mean_neighbor ~ .)
 #mean proximity to wall
 d_wall <- update(d_shoal, wall_proximity ~ .)
 #polarity
 d_polar <- update(d_shoal, polarity ~ .)
 #ratio of space use
-d_space <- update(d_shoal, space_use ~ ., family = beta_family(link = "logit"))
+d_space <- update(d_shoal, space_use ~ .)
 
 #checking the model assumptions
 plot(simulateResiduals(fittedModel = d_shoal))
 plot(simulateResiduals(fittedModel = d_neigh))
 plot(simulateResiduals(fittedModel = d_wall))
-plot(simulateResiduals(fittedModel = d_polar))
-plot(simulateResiduals(fittedModel = d_space)) #assumptions borderline
+plot(simulateResiduals(fittedModel = d_polar)) #outlier test positive
+plot(simulateResiduals(fittedModel = d_space)) #assumptions not met
+
+#transforming the data to meet model assumptions
+trans_data <- comp_data
+trans_data$space_use <- (trans_data$space_use)^2
+
+#the transformed model
+trans_space <- update(d_space, . ~ ., data = trans_data)
+
+#checking the transformed model assumptions
+plot(simulateResiduals(fittedModel = trans_space))
 
 #analyzing the results
 Anova(d_shoal)
@@ -76,6 +96,11 @@ Anova(d_neigh)
 Anova(d_wall)
 Anova(d_polar)
 #Anova(d_space)
+
+#post hoc pairwise comparisons of the significant treatment results
+d_shoal %>% emmeans(pairwise ~ treatment)
+d_wall %>% emmeans(pairwise ~ treatment)
+d_wall %>% emmeans(pairwise ~ treatment:experiment)
 ```
 
 
@@ -90,8 +115,10 @@ comp_data$time <- comp_data$time %>%
                   fct_collapse(morning = c("record1", "record3"),
                                afternoon = c("record2", "record4"))
 
+####still need to average!
+
 #mean shoal area
-m_shoal <- glmmTMB(shoal_area ~ treatment*experiment*time + (1|tankID),
+m_shoal <- glmmTMB(shoal_area ~ treatment*experiment*time + (1|shoalID),
                    data = comp_data, family = gaussian())
 #mean neighbor distance
 m_neigh <- update(m_shoal, mean_neighbor ~ .)
@@ -110,7 +137,7 @@ plot(simulateResiduals(fittedModel = polar)) #assumptions not met
 plot(simulateResiduals(fittedModel = space)) #assumptions not met
 
 #analyzing the results
-Anova(m_shoal)
+#Anova(m_shoal)
 Anova(m_neigh)
 Anova(m_wall)
 #Anova(polar)
