@@ -32,6 +32,7 @@ library(glmmTMB)
 library(emmeans)
 library(car)
 library(DHARMa)
+library(data.table)
 
 #importing the data
 clay_data <- read_csv("6day_clay_proximity_data.csv")
@@ -61,8 +62,7 @@ direct_data <- comp_data %>%
                filter(recording == "record3")
 
 #mean shoal area
-d_shoal <- glmmTMB(shoal_area ~ treatment*experiment,
-                   data = direct_data, gaussian())
+d_shoal <- lm(shoal_area ~ treatment*experiment, data = direct_data)
 #mean neighbor distance
 ##model convergence
 d_neigh <- update(d_shoal, mean_neighbor ~ .)
@@ -98,8 +98,6 @@ Anova(d_polar)
 #Anova(d_space)
 
 #post hoc pairwise comparisons of the significant treatment results
-d_shoal %>% emmeans(pairwise ~ treatment)
-d_wall %>% emmeans(pairwise ~ treatment)
 d_wall %>% emmeans(pairwise ~ treatment:experiment)
 ```
 
@@ -107,37 +105,57 @@ d_wall %>% emmeans(pairwise ~ treatment:experiment)
 ## Full Comparison Models
 
 ```{r full}
-#adding a column to define whether the recording is in the morning (when the
-#flux visibility is the same as the stable visibility) or in the afternoon (when
-#flux visibility is better than the stable visibility)
-comp_data$time <- comp_data$recording
-comp_data$time <- comp_data$time %>%
-                  fct_collapse(morning = c("record1", "record3"),
-                               afternoon = c("record2", "record4"))
+#averaging together together the two morning recordings for each measure and for
+#each experiment
+morn_data <- comp_data %>%
+             filter(recording %in% c("record1", "record3")) %>%
+             select(-recording) %>%
+             group_by(shoalID, treatment, experiment) %>%
+             summarize(polarity = mean(polarity),
+                       shoal_area = mean(shoal_area),
+                       mean_neighbor = mean(mean_neighbor),
+                       wall_proximity = mean(wall_proximity),
+                       space_use = mean(space_use))
+#labeling these values as the morning values
+morn_data$time <- "morning"
+#averaging together the afternoon values
+afte_data <- comp_data %>%
+             filter(recording %in% c("record2", "record4")) %>%
+             select(-recording) %>%
+             group_by(shoalID, treatment, experiment) %>%
+             summarize(polarity = mean(polarity),
+                       shoal_area = mean(shoal_area),
+                       mean_neighbor = mean(mean_neighbor),
+                       wall_proximity = mean(wall_proximity),
+                       space_use = mean(space_use))
+afte_data$time <- "afternoon"
+#combining the averaged morning and afternoon values into a single dataframe
+full_data <- rbind(morn_data, afte_data)
 
-####still need to average!
+
+#the statistical models
 
 #mean shoal area
 m_shoal <- glmmTMB(shoal_area ~ treatment*experiment*time + (1|shoalID),
-                   data = comp_data, family = gaussian())
+                   data = full_data, family = gaussian())
 #mean neighbor distance
 m_neigh <- update(m_shoal, mean_neighbor ~ .)
 #mean proximity to wall
 m_wall <- update(m_shoal, wall_proximity ~ .)
 #polarity
-polar <- update(m_shoal, polarity ~ ., family = beta_family(link = "logit"))
+polar <- update(m_shoal, polarity ~ .)
 #ratio of space use
 space <- update(polar, space_use ~ .)
 
 #checking model assumptions
-plot(simulateResiduals(fittedModel = m_shoal)) #assumptions borderline
+plot(simulateResiduals(fittedModel = m_shoal))
 plot(simulateResiduals(fittedModel = m_neigh))
 plot(simulateResiduals(fittedModel = m_wall))
 plot(simulateResiduals(fittedModel = polar)) #assumptions not met
 plot(simulateResiduals(fittedModel = space)) #assumptions not met
 
 #analyzing the results
-#Anova(m_shoal)
+Anova(m_shoal)
 Anova(m_neigh)
 Anova(m_wall)
 #Anova(polar)
