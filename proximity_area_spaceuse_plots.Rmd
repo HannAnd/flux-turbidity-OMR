@@ -27,8 +27,14 @@ dyedata$flux_level <- dyedata$recording %>%
                                    high = c("record2", "record4"))
 
 #relabeling the "control" condition to "clear" condition for clarity
-claydata$treatment <- recode(claydata$treatment, control = "clear")
-dyedata$treatment <- recode(dyedata$treatment, control = "clear")
+claydata$treatment <- dplyr::recode(claydata$treatment, control = "clear")
+dyedata$treatment <- dplyr::recode(dyedata$treatment, control = "clear")
+
+#combining the data into a single dataframe to include both experiments in the
+#same figures
+claydata$experiment <- "clay"
+dyedata$experiment <- "dye"
+combodata <- rbind(claydata, dyedata)
 ```
 
 
@@ -101,7 +107,17 @@ box_shoalarea <- claydata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "wheat1", "wheat4")) +
                  ylim(9,75) +
-                 theme_classic()
+                 theme(plot.title = element_text(size = 16, face = "bold"),
+                    plot.subtitle = element_text(size = 15),
+                    axis.title = element_text(size = 15, face = "bold"),
+                    axis.text = element_text(size = 15),
+                    legend.title = element_text(size = 16, face = "bold"),
+                    legend.text = element_text(size = 15),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.line = element_line(),
+                    plot.margin = margin(12, 12, 12, 12))
 box_neighbor <- claydata %>%
                 mutate(treatment = fct_relevel(treatment,
                                                "clear", "flux", "stable")) %>%
@@ -124,11 +140,21 @@ box_walls <- claydata %>%
               labs(title = "Clay Experiment: Wall Proximity",
                    subtitle = "Across all recordings") +
               xlab("Treatments") +
-              ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
+              ylab("Mean Distance to Nearest Wall (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "wheat1", "wheat4")) +
               ylim(0,5) +
-              theme_classic()
+              theme(plot.title = element_text(size = 16, face = "bold"),
+                    plot.subtitle = element_text(size = 15),
+                    axis.title = element_text(size = 15, face = "bold"),
+                    axis.text = element_text(size = 15),
+                    legend.title = element_text(size = 16, face = "bold"),
+                    legend.text = element_text(size = 15),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.line = element_line(),
+                    plot.margin = margin(12, 12, 12, 12))
 box_space <- claydata %>%
               mutate(treatment = fct_relevel(treatment,
                                              "clear", "flux", "stable")) %>%
@@ -357,7 +383,17 @@ box_shoalarea <- dyedata %>%
                  scale_fill_manual(values =
                                    c("slategray1", "snow3", "snow4")) +
                  ylim(9,75) +
-                 theme_classic()
+                 theme(plot.title = element_text(size = 16, face = "bold"),
+                    plot.subtitle = element_text(size = 15),
+                    axis.title = element_text(size = 15, face = "bold"),
+                    axis.text = element_text(size = 15),
+                    legend.title = element_text(size = 16, face = "bold"),
+                    legend.text = element_text(size = 15),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.line = element_line(),
+                    plot.margin = margin(12, 12, 12, 12))
 box_neighbor <- dyedata %>%
                 mutate(treatment = fct_relevel(treatment,
                                                "clear", "flux", "stable")) %>%
@@ -380,11 +416,21 @@ box_walls <- dyedata %>%
               labs(title = "Dye Experiment: Wall Proximity",
                    subtitle = "Across all recordings") +
               xlab("Treatments") +
-              ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
+              ylab("Mean Distance to Nearest Wall (cm)") +
               scale_fill_manual(values =
                                 c("slategray1", "snow3", "snow4")) +
               ylim(0,5) +
-              theme_classic()
+              theme(plot.title = element_text(size = 16, face = "bold"),
+                    plot.subtitle = element_text(size = 15),
+                    axis.title = element_text(size = 15, face = "bold"),
+                    axis.text = element_text(size = 15),
+                    legend.title = element_text(size = 16, face = "bold"),
+                    legend.text = element_text(size = 15),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank(),
+                    axis.line = element_line(),
+                    plot.margin = margin(12, 12, 12, 12))
 box_space <- dyedata %>%
               mutate(treatment = fct_relevel(treatment,
                                              "clear", "flux", "stable")) %>%
@@ -538,4 +584,148 @@ hilo_space <- dyedata %>%
               theme_classic()
 hilo_arrange <- ggarrange(hilo_polarity, hilo_shoalarea, hilo_neighbor,
                          hilo_walls, hilo_space, ncol = 3, nrow = 2)
+```
+
+
+## Combined Plots
+
+```{r combo}
+direc_polarity <- combodata %>%
+                  filter(recording == "record3") %>%
+                  mutate(treatment = fct_relevel(treatment,
+                                                 "clear", "flux", "stable")) %>%
+                  ggplot(aes(x = flux_level, y = polarity,
+                              fill = interaction(experiment, treatment,
+                                                 sep = ":"))) +
+                  geom_boxplot() +
+                  labs(fill = "Experiment:Treatment") +
+                  xlab("Treatments") + ylab("Polarity (1-circular variance)") +
+                  scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                               "snow3", "wheat4", "snow4")) +
+                  ylim(0.35,0.8) +
+                  theme_classic()
+direc_shoalarea <- combodata %>%
+                   filter(recording == "record3") %>%
+                   mutate(treatment = fct_relevel(treatment,
+                                                  "clear", "flux", "stable")) %>%
+                   ggplot(aes(x = flux_level, y = shoal_area,
+                              fill = interaction(experiment, treatment,
+                                                 sep = ":"))) +
+                   geom_boxplot() +
+                   labs(fill = "Experiment:Treatment") +
+                   xlab("Treatments") + ylab("Shoal Area (cm^2)") +
+                   scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                                "snow3", "wheat4", "snow4")) +
+                   ylim(9,75) +
+                   theme_classic()
+direc_neighbor <- combodata %>%
+                  filter(recording == "record3") %>%
+                  mutate(treatment = fct_relevel(treatment,
+                                                 "clear", "flux", "stable")) %>%
+                  ggplot(aes(x = flux_level, y = mean_neighbor,
+                             fill = interaction(experiment, treatment,
+                                               sep = ":"))) +
+                  geom_boxplot() +
+                  labs(fill = "Experiment:Treatment") +
+                  xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
+                  scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                               "snow3", "wheat4", "snow4")) +
+                  ylim(6,14) +
+                  theme_classic()
+direc_walls <- combodata %>%
+               filter(recording == "record3") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "flux", "stable")) %>%
+               ggplot(aes(x = flux_level, y = wall_proximity,
+                           fill = interaction(experiment, treatment,
+                                              sep = ":"))) +
+               geom_boxplot() +
+               labs(fill = "Experiment:Treatment") +
+               xlab("Treatments") +
+               ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
+               scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                            "snow3", "wheat4", "snow4")) +
+               ylim(1.2,5) +
+               theme_classic()
+direc_space <- combodata %>%
+               filter(recording == "record3") %>%
+               mutate(treatment = fct_relevel(treatment,
+                                              "clear", "flux", "stable")) %>%
+               ggplot(aes(x = flux_level, y = space_use,
+                          fill = interaction(experiment, treatment,
+                                             sep = ":"))) +
+               geom_boxplot() +
+               labs(fill = "Experiment:Treatment") +
+               xlab("Treatments") + ylab("Proportion of Space Use") +
+               scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                            "snow3", "wheat4", "snow4")) +
+               ylim(0,1) +
+               theme_classic()
+
+hilo_polarity <- combodata %>%
+                 mutate(treatment = fct_relevel(treatment,
+                                                "clear", "flux", "stable")) %>%
+                 ggplot(aes(x = flux_level, y = polarity,
+                            fill = interaction(experiment, treatment,
+                                               sep = ":"))) +
+                 geom_boxplot() +
+                 labs(fill = "Experiment:Treatment") +
+                 xlab("Treatments") + ylab("Polarity (1-circular variance)") +
+                 scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                              "snow3", "wheat4", "snow4")) +
+                 ylim(0.35,0.8) +
+                 theme_classic()
+hilo_shoalarea <- combodata %>%
+                 mutate(treatment = fct_relevel(treatment,
+                                                "clear", "flux", "stable")) %>%
+                 ggplot(aes(x = flux_level, y = shoal_area,
+                            fill = interaction(experiment, treatment,
+                                               sep = ":"))) +
+                 geom_boxplot() +
+                 labs(fill = "Experiment:Treatment") +
+                 xlab("Treatments") + ylab("Shoal Area (cm^2)") +
+                 scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                              "snow3", "wheat4", "snow4")) +
+                 ylim(9,75) +
+                 theme_classic()
+hilo_neighbor <- combodata %>%
+                 mutate(treatment = fct_relevel(treatment,
+                                                "clear", "flux", "stable")) %>%
+                 ggplot(aes(x = flux_level, y = mean_neighbor,
+                            fill = interaction(experiment, treatment,
+                                               sep = ":"))) +
+                 geom_boxplot() +
+                 labs(fill = "Experiment:Treatment") +
+                 xlab("Treatments") + ylab("Mean Neighbor Distance (cm)") +
+                 scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                              "snow3", "wheat4", "snow4")) +
+                 ylim(6,14) +
+                 theme_classic()
+hilo_walls <- combodata %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "flux", "stable")) %>%
+              ggplot(aes(x = flux_level, y = wall_proximity,
+                         fill = interaction(experiment, treatment,
+                                            sep = ":"))) +
+              geom_boxplot() +
+              labs(fill = "Experiment:Treatment") +
+              xlab("Treatments") +
+              ylab("Mean Proximity of Fish to Nearest Wall (cm)") +
+              scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                              "snow3", "wheat4", "snow4")) +
+              ylim(1.2,5) +
+              theme_classic()
+hilo_space <- combodata %>%
+              mutate(treatment = fct_relevel(treatment,
+                                             "clear", "flux", "stable")) %>%
+              ggplot(aes(x = flux_level, y = space_use,
+                         fill = interaction(experiment, treatment,
+                                            sep = ":"))) +
+              geom_boxplot() +
+              labs(fill = "Experiment:Treatment") +
+              xlab("Treatments") + ylab("Proportion of Space Use") +
+              scale_fill_manual(values = c("slategray1", "snow", "wheat1",
+                                              "snow3", "wheat4", "snow4")) +
+              ylim(0,1) +
+              theme_classic()
 ```
