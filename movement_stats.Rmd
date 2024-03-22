@@ -21,112 +21,124 @@ library(DHARMa)
 #importing the data
 clay_data <- read_csv("6day_clay_movement_data.csv")
 dye_data <- read_csv("6day_dye_movement_data.csv")
+#adding a column to identify the experiment
+clay_data$experiment <- "clay"
+dye_data$experiment <- "dye"
+
+#changing tank IDs to shoal IDs to ensure IDs are different between experiments
+clay_data <- clay_data %>%
+             rename_at("tankID", ~"shoalID")
+clay_data$shoalID <- gsub("tank", "clay", clay_data$shoalID)
+dye_data <- dye_data %>%
+            rename_at("tankID", ~"shoalID")
+dye_data$shoalID <- gsub("tank", "dye", dye_data$shoalID)
+
+#combining the clay and dye data together into a single data frame
+comp_data <- rbind(clay_data, dye_data)
 ```
 
 
-## Analyses for Clay Experiment
+## Direct Comparison Models
 
-```{r clay}
-#basic models
+```{r direct}
+#sub-setting the data to only include recording 3
+direct_data <- comp_data %>%
+               filter(recording == "record3")
 
 #mean speed
-m_speed <- glmmTMB(mean_speed ~ treatment + (1|tankID), data = clay_data,
-                   family = gaussian())
+d_speed <- lm(mean_speed ~ treatment*experiment, data = direct_data)
 #speed variance
-var_speed <- update(m_speed, speed_variance ~ .)
+d_var_speed <- update(d_speed, speed_variance ~ .)
 #activity ratio
-activ_ratio <- update(m_speed, activity_ratio ~ ., family = ordbeta
-                                                            (link = "logit"))
+d_activ <- glmmTMB(activity_ratio ~ treatment*experiment, data = direct_data,
+                   family = ordbeta(link = "logit"))
 #total distance traveled
-tot_dist <- update(m_speed, totaldist_cm ~ .)
+d_dist <- update(d_speed, totaldist_cm ~ .)
 #maximum speed
-mx_speed <- update(m_speed, max_speed ~ .)
+d_mx_speed <- update(d_speed, max_speed ~ .)
 #maximum acceleration
-mx_accel <- update(m_speed, max_acceleration ~ .)
+d_accel <- update(d_speed, max_acceleration ~ .)
 
 #checking model assumptions
-plot(simulateResiduals(fittedModel = m_speed))
-plot(simulateResiduals(fittedModel = var_speed)) #assumptions not met
-plot(simulateResiduals(fittedModel = activ_ratio)) #assumptions not met?
-plot(simulateResiduals(fittedModel = tot_dist))
-plot(simulateResiduals(fittedModel = mx_speed)) #assumptions not met
-plot(simulateResiduals(fittedModel = mx_accel)) #assumptions not met
-
-#transforming the data to meet model assumptions
-clay_trans <- clay_data
-clay_trans$speed_variance <- log(clay_trans$speed_variance+1)
-clay_trans$max_speed <- log(clay_trans$max_speed+1)
-clay_trans$max_acceleration <- log(clay_trans$max_acceleration+1)
-
-#the transformed models
-log_var_speed <- update(var_speed, data = clay_trans)
-log_mx_speed <- update(mx_speed, data = clay_trans)
-log_mx_accel <- update(mx_accel, data = clay_trans)
-
-#checking the transformed model assumptions
-plot(simulateResiduals(fittedModel = log_var_speed))
-plot(simulateResiduals(fittedModel = log_mx_speed))
-plot(simulateResiduals(fittedModel = log_mx_accel))
+plot(simulateResiduals(fittedModel = d_speed))
+plot(simulateResiduals(fittedModel = d_var_speed))
+plot(simulateResiduals(fittedModel = d_activ))
+plot(simulateResiduals(fittedModel = d_dist))
+plot(simulateResiduals(fittedModel = d_mx_speed))
+plot(simulateResiduals(fittedModel = d_accel))
 
 #analyzing the results
-Anova(m_speed)
-Anova(log_var_speed)
-Anova(activ_ratio)
-Anova(tot_dist)
-Anova(log_mx_speed)
-Anova(log_mx_accel)
+Anova(d_speed)
+Anova(d_var_speed)
+Anova(d_activ)
+Anova(d_dist)
+Anova(d_mx_speed)
+Anova(d_accel)
 ```
 
 
-## Analyses for Dye Experiment
+## Full Comparison Models
 
-```{r dye}
+```{r full}
+#averaging together together the two morning recordings for each measure and for
+#each experiment
+morn_data <- comp_data %>%
+             filter(recording %in% c("record1", "record3")) %>%
+             select(-recording) %>%
+             group_by(shoalID, treatment, experiment) %>%
+             summarize(mean_speed = mean(mean_speed),
+                       activity_ratio = mean(activity_ratio),
+                       speed_variance = mean(speed_variance),
+                       max_speed = mean(max_speed),
+                       max_acceleration = mean(max_acceleration),
+                       totaldist_cm = mean(totaldist_cm))
+#labeling these values as the morning values
+morn_data$time <- "morning"
+#averaging together the afternoon values
+afte_data <- comp_data %>%
+             filter(recording %in% c("record2", "record4")) %>%
+             select(-recording) %>%
+             group_by(shoalID, treatment, experiment) %>%
+             summarize(mean_speed = mean(mean_speed),
+                       activity_ratio = mean(activity_ratio),
+                       speed_variance = mean(speed_variance),
+                       max_speed = mean(max_speed),
+                       max_acceleration = mean(max_acceleration),
+                       totaldist_cm = mean(totaldist_cm))
+afte_data$time <- "afternoon"
+#combining the averaged morning and afternoon values into a single dataframe
+full_data <- rbind(morn_data, afte_data)
+
+
+#the statistical models
+
 #mean speed
-m_speed <- glmmTMB(mean_speed ~ treatment + (1|tankID), data = dye_data,
-                   family = gaussian())
+speed <- lm(mean_speed ~ treatment*experiment, data = full_data)
 #speed variance
-var_speed <- update(m_speed, speed_variance ~ .)
+var_speed <- update(speed, speed_variance ~ .)
 #activity ratio
-##this data is 0-1 bounded with possible values at both extremes (though only
-##the 1s are actually present). To deal with with this I'm using an ordered
-##beta regression, with the beta family for comparing the ratios and the ordered
-##variant handling the 1-inflation
-###~~~!!!will need to check with Data Lunch to ensure I'm using this properly!!!
-activ_ratio <- update(m_speed, activity_ratio ~ ., family = ordbeta
-                                                            (link = "logit"))
+activ <- glmmTMB(activity_ratio ~ treatment*experiment, data = full_data,
+                   family = ordbeta(link = "logit"))
 #total distance traveled
-tot_dist <- update(m_speed, totaldist_cm ~ .)
+dist <- update(speed, totaldist_cm ~ .)
 #maximum speed
-mx_speed <- update(m_speed, max_speed ~ .)
+mx_speed <- update(speed, max_speed ~ .)
 #maximum acceleration
-mx_accel <- update(m_speed, max_acceleration ~ .)
+accel <- update(speed, max_acceleration ~ .)
 
 #checking model assumptions
-plot(simulateResiduals(fittedModel = m_speed))
-plot(simulateResiduals(fittedModel = var_speed)) #assumptions not met
-plot(simulateResiduals(fittedModel = activ_ratio))
-plot(simulateResiduals(fittedModel = tot_dist))
+plot(simulateResiduals(fittedModel = speed))
+plot(simulateResiduals(fittedModel = var_speed)) #doesn't meet assumptions
+plot(simulateResiduals(fittedModel = activ))
+plot(simulateResiduals(fittedModel = dist))
 plot(simulateResiduals(fittedModel = mx_speed))
-plot(simulateResiduals(fittedModel = mx_accel)) #assumptions borderline
-
-#transforming the data to meet model assumptions
-dye_trans <- dye_data
-dye_trans$speed_variance <- log(dye_trans$speed_variance+1)
-dye_trans$max_acceleration <- log(dye_trans$max_acceleration+1)
-
-#the transformed models
-log_var_speed <- update(var_speed, data = dye_trans)
-log_mx_accel <- update(mx_accel, data = dye_trans)
-
-#checking the transformed model assumptions
-plot(simulateResiduals(fittedModel = log_var_speed))
-plot(simulateResiduals(fittedModel = log_mx_accel)) #assumptions borderline
+plot(simulateResiduals(fittedModel = accel))
 
 #analyzing the results
-Anova(m_speed)
-Anova(log_var_speed)
-Anova(activ_ratio)
-Anova(tot_dist)
+Anova(speed)
+#Anova(var_speed)
+Anova(activ)
+Anova(dist)
 Anova(mx_speed)
-Anova(log_mx_accel) #assumptions borderline
+Anova(accel)
 ```
