@@ -53,12 +53,12 @@ claystable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
 clayflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
              "tank5A", "tank4B", "tank4A", "tank7B")
 #the tank IDs in each treatment for the dye experiment
-dyeclear <- c("tank1C", "tank5B", "tank3C", "tank8A", "tank9A", "tank4C",
-              "tank6A", "tank6B", "tank2C", "tank2B")
-dyestable <- c("tank1B", "tank9B", "tank8B", "tank3B", "tank9C", "tank7A",
-               "tank3A", "tank6C", "tank1A", "tank10A")
-dyeflux <- c("tank10C", "tank8C", "tank10B", "tank5C", "tank2A", "tank7C",
-             "tank5A", "tank4B", "tank4A", "tank7B")
+dyeclear <- c("tank2A", "tank8C", "tank4C", "tank1C", "tank8B", "tank9C",
+              "tank3A", "tank4A", "tank5B", "tank1B")
+dyestable <- c("tank6A", "tank3B", "tank6C", "tank4B", "tank7B", "tank6B",
+               "tank7C", "tank7A", "tank10C", "tank9A")
+dyeflux <- c("tank9B", "tank3C", "tank10A", "tank8A", "tank1A", "tank5C",
+             "tank10B", "tank2C", "tank2B")
 ```
 
 

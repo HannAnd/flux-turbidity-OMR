@@ -22,9 +22,9 @@ clayclear <- c("1C", "5B", "3C", "8A", "9A", "4C", "6A", "6B", "2C", "2B")
 claystable <- c("1B", "9B", "8B", "3B", "9C", "7A", "3A", "6C", "1A", "10A")
 clayflux <- c("10C", "8C", "10B", "5C", "2A", "7C", "5A", "4B", "4A", "7B")
 #the tank IDs in each treatment for the dye experiment
-dyeclear <- c("1C", "5B", "3C", "8A", "9A", "4C", "6A", "6B", "2C", "2B")
-dyestable <- c("1B", "9B", "8B", "3B", "9C", "7A", "3A", "6C", "1A", "10A")
-dyeflux <- c("10C", "8C", "10B", "5C", "2A", "7C", "5A", "4B", "4A", "7B")
+dyeclear <- c("2A", "8C", "4C", "1C", "8B", "9C", "3A", "4A", "5B", "1B")
+dyestable <- c("6A", "3B", "6C", "4B", "7B", "6B", "7C", "7A", "10C", "9A")
+dyeflux <- c("9B", "3C", "10A", "8A", "1A", "5C", "10B", "2C", "2B")
 ```
 
 
@@ -203,88 +203,60 @@ all_lev <- rbind(clay_lev, dye_lev)
 
 #dividing the full data sets into just positive/negative responses in one set of
 #dataframes and all other behaviors in another other
-  #positive and negative responses
-clay_resp <- clay_agg %>%
-             filter(behavior %in% c("positive", "negative"))
-dye_resp <- dye_agg %>%
-            filter(behavior %in% c("positive", "negative"))
+  #positive and negative stimulus responses
+stim_resp_all <- all_agg %>%
+                 filter(behavior %in% c("positive", "negative"))
+stim_resp_lev <- all_lev %>%
+                 filter(behavior %in% c("positive", "negative"))
   #other behaviors
-clay_oth <- clay_agg %>%
-              filter(!behavior %in% c("positive", "negative"))
-dye_oth <- dye_agg %>%
-           filter(!behavior %in% c("positive", "negative"))
+oth_resp <- all_agg %>%
+            filter(!behavior %in% c("positive", "negative"))
 
 
 #extracting all used independent variable combinations for both experiments
-clay_comp <- clay_agg[!duplicated(clay_agg[,1:5]),1:5]
-dye_comp <- dye_agg[!duplicated(dye_agg[,1:5]),1:5]
+all_comp <- all_agg[!duplicated(all_agg[,c(1:5,12)]),c(1:5,12)]
 
 #merging the complete combinations with the collapsed data and removing any
 #unnecessary columns
-  #clay
-clay_resp <- merge(clay_resp[,c(1:5,7:11)], clay_comp, all = TRUE,
-                   by = c("shoalID", "treatment", "sex", "OMR_ID",
-                          "water_clarity"))
-clay_oth <- merge(clay_oth[,c(1:6,9:11)], clay_comp, all = TRUE,
-                  by = c("shoalID", "treatment", "sex", "OMR_ID",
+  #positive and negative stimulus responses
+stim_resp_all <- merge(stim_resp_all[,c(1:5,7:12)], all_comp, all = TRUE,
+                       by = c("experiment", "shoalID", "treatment", "sex",
+                              "OMR_ID", "water_clarity"))
+stim_resp_lev <- merge(stim_resp_lev, all_comp, all = TRUE,
+                       by = c("experiment", "shoalID", "treatment", "sex",
+                              "OMR_ID", "water_clarity"))
+  #other behaviors
+oth_resp <- merge(oth_resp[,c(1:6,9:12)], all_comp, all = TRUE,
+                  by = c("experiment", "shoalID", "treatment", "sex", "OMR_ID",
                          "water_clarity"))
-clay_lev <- merge(clay_lev, clay_comp, all = TRUE,
-                  by = c("shoalID", "treatment", "sex", "OMR_ID",
-                         "water_clarity"))
-  #dye
-dye_resp <- merge(dye_resp[,c(1:5,7:11)], dye_comp, all = TRUE,
-                  by = c("shoalID", "treatment", "sex", "OMR_ID",
-                  "water_clarity"))
-dye_oth <- merge(dye_oth[,c(1:6,9:11)], dye_comp, all = TRUE,
-                 by = c("shoalID", "treatment", "sex", "OMR_ID",
-                        "water_clarity"))
-dye_lev <- merge(dye_lev, clay_comp, all = TRUE,
-                 by = c("shoalID", "treatment", "sex", "OMR_ID",
-                        "water_clarity"))
+
 
 #using the merged data to fill in the missing true zero values (which BORIS
 #doesn't export) and removing any resultant incorrect NAs
-clay_resp <- as.data.frame(clay_resp) %>%
-             complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
-                      stimulus_level, stimulus_direc, behavior,
-                      fill = list(duration_s = NA, behav_count = 0)) %>%
-             subset(!is.na(stimulus_level)) %>%
-             subset(!is.na(stimulus_direc)) %>%
-             subset(!is.na(behavior))
-clay_oth <- as.data.frame(clay_oth) %>%
-            complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
+  #positive and negative stimulus responses
+stim_resp_all <- as.data.frame(stim_resp_all) %>%
+                 complete(nesting(experiment, shoalID, treatment, sex, OMR_ID,
+                                  water_clarity),
+                          stimulus_level, stimulus_direc, behavior,
+                          fill = list(duration_s = NA, behav_count = 0)) %>%
+                 subset(!is.na(stimulus_level)) %>%
+                 subset(!is.na(stimulus_direc)) %>%
+                 subset(!is.na(behavior))
+stim_resp_lev <- as.data.frame(stim_resp_lev) %>%
+                 complete(nesting(experiment, shoalID, treatment, sex, OMR_ID,
+                                  water_clarity),
+                                  stimulus_level, behavior,
+                          fill = list(duration_s = NA, behav_count = 0)) %>%
+                 subset(!is.na(stimulus_level)) %>%
+                 subset(!is.na(behavior))
+  #other behaviors
+oth_resp <- as.data.frame(oth_resp) %>%
+            complete(nesting(experiment, shoalID, treatment, sex, OMR_ID,
+                             water_clarity),
                      screen_shows, behavior, fill = list(duration_s = NA,
                                                          behav_count = 0)) %>%
             subset(!is.na(screen_shows)) %>%
             subset(!is.na(behavior))
-clay_lev <- as.data.frame(clay_lev) %>%
-            complete(nesting(shoaldID, treatment, sex, OMR_ID, water_clarity),
-                     stimulus_level, behavior, fill = list(duration_s = NA,
-                                                           behav_count = 0)) %>%
-            subset(!is.na(stimulus_level)) %>%
-            subset(!is.na(behavior))
-dye_resp <- as.data.frame(dye_resp) %>%
-            complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
-                     stimulus_level, behavior, fill = list(duration_s = NA,
-                                                         behav_count = 0)) %>%
-            subset(!is.na(stimulus_level)) %>%
-            subset(!is.na(stimulus_direc)) %>%
-            subset(!is.na(behavior))
-dye_oth <- as.data.frame(dye_oth) %>%
-           complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
-                    screen_shows, behavior, fill = list(duration_s = NA,
-                                                        behav_count = 0)) %>%
-           subset(!is.na(screen_shows)) %>%
-           subset(!is.na(behavior))
-dye_lev <- as.data.frame(dye_lev) %>%
-           complete(nesting(shoaldID, treatment, sex, OMR_ID, water_clarity),
-                    stimulus_level, behavior, fill = list(duration_s = NA,
-                                                          behav_count = 0)) %>%
-           subset(!is.na(stimulus_level)) %>%
-           subset(!is.na(behavior))
-
-
-#adding an identifier to each
 ```
 
 
