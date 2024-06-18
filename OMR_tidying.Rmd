@@ -1,0 +1,299 @@
+---
+title: "OMR Data Tidying"
+author: "Hannah Anderson"
+date: "2024-06-14"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("C://Users/hande/Documents/R/fluctuating-turbidity2")
+
+library(tidyverse)
+
+clay_OMR <- read_csv("OMR_Clay_Dataset_STIMLEVELS_EmilyElsasser_HMAedited.csv")
+dye_OMR <- read_csv("OMR_Dye_Dataset_STIMLEVELS_EmilyElsasser.csv")
+
+#the tank IDs in each treatment for the clay experiment
+clayclear <- c("1C", "5B", "3C", "8A", "9A", "4C", "6A", "6B", "2C", "2B")
+claystable <- c("1B", "9B", "8B", "3B", "9C", "7A", "3A", "6C", "1A", "10A")
+clayflux <- c("10C", "8C", "10B", "5C", "2A", "7C", "5A", "4B", "4A", "7B")
+#the tank IDs in each treatment for the dye experiment
+dyeclear <- c("1C", "5B", "3C", "8A", "9A", "4C", "6A", "6B", "2C", "2B")
+dyestable <- c("1B", "9B", "8B", "3B", "9C", "7A", "3A", "6C", "1A", "10A")
+dyeflux <- c("10C", "8C", "10B", "5C", "2A", "7C", "5A", "4B", "4A", "7B")
+```
+
+
+## Cleaning the Data
+
+Reorganizing the data into a more usable format.
+
+```{r clean}
+#trimming the data frames to only the useful columns
+clay_trim <- clay_OMR[,c(8:9,11:12,15,19,22)]
+dye_trim <- dye_OMR[,c(8:9,11:12,15,19,22)]
+
+#renaming the columns to be more R friendly
+columns <- c("shoalID", "OMR_ID", "water_clarity", "sex", "behavior",
+             "duration_s", "stimulus_level")
+colnames(clay_trim) <- columns
+colnames(dye_trim) <- columns
+
+
+#adding the column "screen_shows" to identify if the screen was showing a
+#stimulus or the between-stimuli gray screen
+ #for clay
+clay_trim$screen_shows <- NA
+for (i in 1:(length(clay_trim$shoalID))) {
+  if (clay_trim$behavior[[i]] == "jump gray" |
+      clay_trim$behavior[[i]] == "still gray" |
+      clay_trim$behavior[[i]] == "spasmic motion gray") {
+    clay_trim$screen_shows[[i]] <- "gray"
+  } else {
+    clay_trim$screen_shows[[i]] <- "stimulus"
+  }
+}
+  #for dye
+dye_trim$screen_shows <- NA
+for (i in 1:(length(dye_trim$shoalID))) {
+  if (dye_trim$behavior[[i]] == "jump gray" |
+      dye_trim$behavior[[i]] == "still gray" |
+      dye_trim$behavior[[i]] == "spasmic motion gray") {
+    dye_trim$screen_shows[[i]] <- "gray"
+  } else {
+    dye_trim$screen_shows[[i]] <- "stimulus"
+  }
+}
+#re-labeling the behavior names in "behavior" to contain only one variable
+#rather than two
+  #for clay
+clay_trim <- clay_trim %>%
+             mutate(behavior = case_match(behavior, "jump stimulus" ~ "jump",
+                                                    "jump gray" ~ "jump",
+                                                    "still stim" ~ "still",
+                                                    "still gray" ~ "still",
+                                                    "spasmic motiom stim" ~
+                                                             "spasmic_motion",
+                                                    "spasmic motion gray" ~
+                                                             "spasmic_motion",
+                                                    "negative" ~ "negative",
+                                                    "positive" ~ "positive"))
+  #for dye
+dye_trim <- dye_trim %>%
+            mutate(behavior = case_match(behavior, "jump stimulus" ~ "jump",
+                                                   "jump gray" ~ "jump",
+                                                   "still stim" ~ "still",
+                                                   "still gray" ~ "still",
+                                                   "spasmic motion stim" ~
+                                                            "spasmic_motion",
+                                                   "spasmic motion gray" ~
+                                                            "spasmic_motion",
+                                                   "negative" ~ "negative",
+                                                   "positive" ~ "positive"))
+
+
+#adding the column "stimulus_direc" to identify if the stimulus was spinning in
+#the clockwise or counterclockwise direction, where "C" in stimulus_level
+#indicates clockwise and "CC" indicates counterclockwise
+  #for clay
+clay_trim$stimulus_direc <- NA
+for (n in 1:(length(clay_trim$shoalID))) {
+  if (is.na(clay_trim$stimulus_level[[n]]) == TRUE) {
+    clay_trim$stimulus_direc[[n]] <- NA
+  } else if (nchar(clay_trim$stimulus_level[[n]]) < 3) {
+    clay_trim$stimulus_direc[[n]] <- "clockwise"
+  } else if (nchar(clay_trim$stimulus_level[[n]]) > 2) {
+    clay_trim$stimulus_direc[[n]] <- "counterclockwise"
+  } else {
+    clay_trim$stimulus_direc[[n]] <- "error"
+  }
+}
+  #for dye
+dye_trim$stimulus_direc <- NA
+for (n in 1:(length(dye_trim$shoalID))) {
+  if (is.na(dye_trim$stimulus_level[[n]]) == TRUE) {
+    dye_trim$stimulus_direc[[n]] <- NA
+  } else if (nchar(dye_trim$stimulus_level[[n]]) < 3) {
+    dye_trim$stimulus_direc[[n]] <- "clockwise"
+  } else if (nchar(dye_trim$stimulus_level[[n]]) > 2) {
+    dye_trim$stimulus_direc[[n]] <- "counterclockwise"
+  } else {
+    dye_trim$stimulus_direc[[n]] <- "error"
+  }
+}
+#re-labeling the levels in the stimulus_level column to contain only one
+#variable
+  #for clay
+clay_trim$stimulus_level <- clay_trim$stimulus_level %>%
+                            str_remove_all("C")
+clay_trim$stimulus_level <- clay_trim$stimulus_level %>%
+                            str_remove_all("c")
+  #for dye
+dye_trim$stimulus_level <- dye_trim$stimulus_level %>%
+                           str_remove_all("C")
+
+
+#adding the treatment conditions
+#note: warning is acceptable, only a subset of the tanks from the overall
+#experiment were sampled for the OMR trials
+clay_trim$treatment <- clay_trim$shoalID %>%
+                       fct_collapse(flux = clayflux,
+                                    stable = claystable,
+                                    clear = clayclear)
+dye_trim$treatment <- dye_trim$shoalID %>%
+                      fct_collapse(flux = dyeflux,
+                                   stable = dyestable,
+                                   clear = dyeclear)
+
+
+#adding "clay" or "dye" to the beginning of each shoal ID to make them unique
+#between experiments
+clay_trim$shoalID <- paste0("clay", clay_trim$shoalID)
+dye_trim$shoalID <- paste0("dye", dye_trim$shoalID)
+```
+
+
+## Summarizing the Data
+
+```{r summarize}
+#collapsing the data into behavior counts and mean durations
+  #all clay data
+clay_agg <- clay_trim %>%
+            group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
+                     screen_shows, stimulus_level, stimulus_direc, behavior) %>%
+            summarize(duration_s = mean(duration_s),
+                      behav_count = as.numeric(table(behavior)))
+  #clay data aggregating together the stimulus directions
+clay_lev <- clay_trim %>%
+            filter(behavior %in% c("positive", "negative")) %>%
+            group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
+                     stimulus_level, behavior) %>%
+            summarize(duration_s = mean(duration_s),
+                      behav_count = as.numeric(table(behavior)))
+  #all dye data
+dye_agg <- dye_trim %>%
+           group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
+                    screen_shows, stimulus_level, stimulus_direc, behavior) %>%
+           summarize(duration_s = mean(duration_s),
+                     behav_count = as.numeric(table(behavior)))
+  #dye data aggregating together the stimulus directions
+dye_lev <- dye_trim %>%
+           filter(behavior %in% c("positive", "negative")) %>%
+           group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
+                    stimulus_level, behavior) %>%
+           summarize(duration_s = mean(duration_s),
+                    behav_count = as.numeric(table(behavior)))
+
+
+#identifying each dataset by experiment
+  #clay
+clay_agg$experiment <- "clay"
+clay_lev$experiment <- "clay"
+  #dye
+dye_agg$experiment <- "dye"
+dye_lev$experiment <- "dye"
+
+#combining the clay and dye data sets
+all_agg <- rbind(clay_agg, dye_agg)
+all_lev <- rbind(clay_lev, dye_lev)
+
+#dividing the full data sets into just positive/negative responses in one set of
+#dataframes and all other behaviors in another other
+  #positive and negative responses
+clay_resp <- clay_agg %>%
+             filter(behavior %in% c("positive", "negative"))
+dye_resp <- dye_agg %>%
+            filter(behavior %in% c("positive", "negative"))
+  #other behaviors
+clay_oth <- clay_agg %>%
+              filter(!behavior %in% c("positive", "negative"))
+dye_oth <- dye_agg %>%
+           filter(!behavior %in% c("positive", "negative"))
+
+
+#extracting all used independent variable combinations for both experiments
+clay_comp <- clay_agg[!duplicated(clay_agg[,1:5]),1:5]
+dye_comp <- dye_agg[!duplicated(dye_agg[,1:5]),1:5]
+
+#merging the complete combinations with the collapsed data and removing any
+#unnecessary columns
+  #clay
+clay_resp <- merge(clay_resp[,c(1:5,7:11)], clay_comp, all = TRUE,
+                   by = c("shoalID", "treatment", "sex", "OMR_ID",
+                          "water_clarity"))
+clay_oth <- merge(clay_oth[,c(1:6,9:11)], clay_comp, all = TRUE,
+                  by = c("shoalID", "treatment", "sex", "OMR_ID",
+                         "water_clarity"))
+clay_lev <- merge(clay_lev, clay_comp, all = TRUE,
+                  by = c("shoalID", "treatment", "sex", "OMR_ID",
+                         "water_clarity"))
+  #dye
+dye_resp <- merge(dye_resp[,c(1:5,7:11)], dye_comp, all = TRUE,
+                  by = c("shoalID", "treatment", "sex", "OMR_ID",
+                  "water_clarity"))
+dye_oth <- merge(dye_oth[,c(1:6,9:11)], dye_comp, all = TRUE,
+                 by = c("shoalID", "treatment", "sex", "OMR_ID",
+                        "water_clarity"))
+dye_lev <- merge(dye_lev, clay_comp, all = TRUE,
+                 by = c("shoalID", "treatment", "sex", "OMR_ID",
+                        "water_clarity"))
+
+#using the merged data to fill in the missing true zero values (which BORIS
+#doesn't export) and removing any resultant incorrect NAs
+clay_resp <- as.data.frame(clay_resp) %>%
+             complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
+                      stimulus_level, stimulus_direc, behavior,
+                      fill = list(duration_s = NA, behav_count = 0)) %>%
+             subset(!is.na(stimulus_level)) %>%
+             subset(!is.na(stimulus_direc)) %>%
+             subset(!is.na(behavior))
+clay_oth <- as.data.frame(clay_oth) %>%
+            complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
+                     screen_shows, behavior, fill = list(duration_s = NA,
+                                                         behav_count = 0)) %>%
+            subset(!is.na(screen_shows)) %>%
+            subset(!is.na(behavior))
+clay_lev <- as.data.frame(clay_lev) %>%
+            complete(nesting(shoaldID, treatment, sex, OMR_ID, water_clarity),
+                     stimulus_level, behavior, fill = list(duration_s = NA,
+                                                           behav_count = 0)) %>%
+            subset(!is.na(stimulus_level)) %>%
+            subset(!is.na(behavior))
+dye_resp <- as.data.frame(dye_resp) %>%
+            complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
+                     stimulus_level, behavior, fill = list(duration_s = NA,
+                                                         behav_count = 0)) %>%
+            subset(!is.na(stimulus_level)) %>%
+            subset(!is.na(stimulus_direc)) %>%
+            subset(!is.na(behavior))
+dye_oth <- as.data.frame(dye_oth) %>%
+           complete(nesting(shoalID, treatment, sex, OMR_ID, water_clarity),
+                    screen_shows, behavior, fill = list(duration_s = NA,
+                                                        behav_count = 0)) %>%
+           subset(!is.na(screen_shows)) %>%
+           subset(!is.na(behavior))
+dye_lev <- as.data.frame(dye_lev) %>%
+           complete(nesting(shoaldID, treatment, sex, OMR_ID, water_clarity),
+                    stimulus_level, behavior, fill = list(duration_s = NA,
+                                                          behav_count = 0)) %>%
+           subset(!is.na(stimulus_level)) %>%
+           subset(!is.na(behavior))
+
+
+#adding an identifier to each
+```
+
+
+## Writing the Data to .csv
+
+```{r csv}
+write_csv(clay_resp, "clay_OMR_stimulus_responses.csv")
+write_csv(clay_oth, "clay_OMR_other_behaviors.csv")
+write_csv(dye_resp, "dye_OMR_stimulus_responses.csv")
+write_csv(dye_oth, "dye_OMR_other_responses.csv")
+```
+
