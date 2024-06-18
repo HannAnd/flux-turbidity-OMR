@@ -161,52 +161,31 @@ dye_trim$shoalID <- paste0("dye", dye_trim$shoalID)
 
 ```{r summarize}
 #collapsing the data into behavior counts and mean durations
-  #all clay data
+  #clay data
 clay_agg <- clay_trim %>%
             group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
                      screen_shows, stimulus_level, stimulus_direc, behavior) %>%
-            summarize(duration_s = mean(duration_s),
-                      behav_count = as.numeric(table(behavior)))
-  #clay data aggregating together the stimulus directions
-clay_lev <- clay_trim %>%
-            filter(behavior %in% c("positive", "negative")) %>%
-            group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
-                     stimulus_level, behavior) %>%
-            summarize(duration_s = mean(duration_s),
+            summarize(duration_s = sum(duration_s),
                       behav_count = as.numeric(table(behavior)))
   #all dye data
 dye_agg <- dye_trim %>%
            group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
                     screen_shows, stimulus_level, stimulus_direc, behavior) %>%
-           summarize(duration_s = mean(duration_s),
+           summarize(duration_s = sum(duration_s),
                      behav_count = as.numeric(table(behavior)))
-  #dye data aggregating together the stimulus directions
-dye_lev <- dye_trim %>%
-           filter(behavior %in% c("positive", "negative")) %>%
-           group_by(shoalID, treatment, sex, OMR_ID, water_clarity,
-                    stimulus_level, behavior) %>%
-           summarize(duration_s = mean(duration_s),
-                    behav_count = as.numeric(table(behavior)))
 
 
 #identifying each dataset by experiment
-  #clay
 clay_agg$experiment <- "clay"
-clay_lev$experiment <- "clay"
-  #dye
 dye_agg$experiment <- "dye"
-dye_lev$experiment <- "dye"
 
 #combining the clay and dye data sets
 all_agg <- rbind(clay_agg, dye_agg)
-all_lev <- rbind(clay_lev, dye_lev)
 
 #dividing the full data sets into just positive/negative responses in one set of
 #dataframes and all other behaviors in another other
   #positive and negative stimulus responses
-stim_resp_all <- all_agg %>%
-                 filter(behavior %in% c("positive", "negative"))
-stim_resp_lev <- all_lev %>%
+stim_resp <- all_agg %>%
                  filter(behavior %in% c("positive", "negative"))
   #other behaviors
 oth_resp <- all_agg %>%
@@ -219,10 +198,7 @@ all_comp <- all_agg[!duplicated(all_agg[,c(1:5,12)]),c(1:5,12)]
 #merging the complete combinations with the collapsed data and removing any
 #unnecessary columns
   #positive and negative stimulus responses
-stim_resp_all <- merge(stim_resp_all[,c(1:5,7:12)], all_comp, all = TRUE,
-                       by = c("experiment", "shoalID", "treatment", "sex",
-                              "OMR_ID", "water_clarity"))
-stim_resp_lev <- merge(stim_resp_lev, all_comp, all = TRUE,
+stim_resp <- merge(stim_resp[,c(1:5,7:12)], all_comp, all = TRUE,
                        by = c("experiment", "shoalID", "treatment", "sex",
                               "OMR_ID", "water_clarity"))
   #other behaviors
@@ -234,20 +210,13 @@ oth_resp <- merge(oth_resp[,c(1:6,9:12)], all_comp, all = TRUE,
 #using the merged data to fill in the missing true zero values (which BORIS
 #doesn't export) and removing any resultant incorrect NAs
   #positive and negative stimulus responses
-stim_resp_all <- as.data.frame(stim_resp_all) %>%
+stim_resp <- as.data.frame(stim_resp) %>%
                  complete(nesting(experiment, shoalID, treatment, sex, OMR_ID,
                                   water_clarity),
                           stimulus_level, stimulus_direc, behavior,
                           fill = list(duration_s = NA, behav_count = 0)) %>%
                  subset(!is.na(stimulus_level)) %>%
                  subset(!is.na(stimulus_direc)) %>%
-                 subset(!is.na(behavior))
-stim_resp_lev <- as.data.frame(stim_resp_lev) %>%
-                 complete(nesting(experiment, shoalID, treatment, sex, OMR_ID,
-                                  water_clarity),
-                                  stimulus_level, behavior,
-                          fill = list(duration_s = NA, behav_count = 0)) %>%
-                 subset(!is.na(stimulus_level)) %>%
                  subset(!is.na(behavior))
   #other behaviors
 oth_resp <- as.data.frame(oth_resp) %>%
@@ -257,15 +226,31 @@ oth_resp <- as.data.frame(oth_resp) %>%
                                                          behav_count = 0)) %>%
             subset(!is.na(screen_shows)) %>%
             subset(!is.na(behavior))
+
+
+#aggregating the data to create a version where the stimulus response behaviors
+#aren't divided by stimulus direction
+no_direc <- stim_resp %>%
+            group_by(experiment, shoalID, treatment, sex, OMR_ID, water_clarity,
+                     stimulus_level, behavior) %>%
+            summarize(duration_s = sum(duration_s, na.rm = TRUE),
+                      behav_count = sum(behav_count, na.rm = TRUE))
+#aggregating the data to create a version where both stimulus responses
+#(positive and negative) are combined to create a composite response score
+resp_agg <- stim_resp %>%
+            group_by(experiment, shoalID, treatment, sex, OMR_ID, water_clarity,
+                     stimulus_level) %>%
+            summarize(duration_s = sum(duration_s, na.rm = TRUE),
+                      behav_count = sum(behav_count, na.rm = TRUE))
 ```
 
 
 ## Writing the Data to .csv
 
 ```{r csv}
-write_csv(clay_resp, "clay_OMR_stimulus_responses.csv")
-write_csv(clay_oth, "clay_OMR_other_behaviors.csv")
-write_csv(dye_resp, "dye_OMR_stimulus_responses.csv")
-write_csv(dye_oth, "dye_OMR_other_responses.csv")
+write_csv(stim_resp, "OMR_stimulus_response_complete.csv")
+write_csv(no_direc, "OMR_stimulus_response_levels_only.csv")
+write_csv(resp_agg, "OMR_stimulus_response_all_aggregated.csv")
+write_csv(oth_resp, "OMR_other_behaviors.csv")
 ```
 
