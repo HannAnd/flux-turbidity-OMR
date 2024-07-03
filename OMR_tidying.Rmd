@@ -24,7 +24,7 @@ clayflux <- c("10C", "8C", "10B", "5C", "2A", "7C", "5A", "4B", "4A", "7B")
 #the tank IDs in each treatment for the dye experiment
 dyeclear <- c("2A", "8C", "4C", "1C", "8B", "9C", "3A", "4A", "5B", "1B")
 dyestable <- c("6A", "3B", "6C", "4B", "7B", "6B", "7C", "7A", "10C", "9A")
-dyeflux <- c("9B", "3C", "10A", "8A", "1A", "5C", "10B", "2C", "2B")
+dyeflux <- c("9B", "3C", "10A", "5A", "8A", "1A", "5C", "10B", "2C", "2B")
 ```
 
 
@@ -42,6 +42,10 @@ columns <- c("shoalID", "OMR_ID", "water_clarity", "sex", "behavior",
              "duration_s", "stimulus_level")
 colnames(clay_trim) <- columns
 colnames(dye_trim) <- columns
+
+#removing the data from clay's tank 8A recordings because there was a
+#methodological mistake in the female's recording
+clay_trim <- subset(clay_trim, shoalID != "8A")
 
 
 #adding the column "screen_shows" to identify if the screen was showing a
@@ -242,6 +246,21 @@ resp_agg <- stim_resp %>%
                      stimulus_level) %>%
             summarize(duration_s = sum(duration_s, na.rm = TRUE),
                       behav_count = sum(behav_count, na.rm = TRUE))
+
+#creating a binary version of the data that just tracks if there was or was not
+#a stimulus response
+yesno <- no_direc[,c(1:8,10)]
+yesno$response <- NA
+for (i in 1:(length(yesno$shoalID))) {
+  if (yesno$behav_count[i] == 0) {
+    yesno$response[i] <- 0
+  } else if (yesno$behav_count[i] > 0) {
+    yesno$response[i] <- 1
+  } else {
+    yesno$response[i] <- "error"
+  }
+}
+yesno <- yesno[,c(1:8,10)]
 ```
 
 
@@ -252,5 +271,6 @@ write_csv(stim_resp, "OMR_stimulus_response_complete.csv")
 write_csv(no_direc, "OMR_stimulus_response_levels_only.csv")
 write_csv(resp_agg, "OMR_stimulus_response_all_aggregated.csv")
 write_csv(oth_resp, "OMR_other_behaviors.csv")
+write_csv(yesno, "OMR_binary_responses.csv")
 ```
 
